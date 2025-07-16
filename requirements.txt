@@ -1,0 +1,30 @@
+# Core
+fastapi
+uvicorn[standard]
+pydantic>=2.5.0
+pydantic-settings
+pydantic-ai
+python-dotenv
+
+# Data fetching
+arxiv
+feedparser
+httpx
+aiohttp
+
+# AI/ML
+sentence-transformers
+
+# Database
+supabase
+sqlalchemy
+
+# Utilities
+tenacity
+
+# Dev/Test
+pytest
+pytest-asyncio
+pytest-mock
+ruff
+mypy

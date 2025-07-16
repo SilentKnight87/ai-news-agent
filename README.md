@@ -1,296 +1,348 @@
-# Context Engineering Template
+# AI News Aggregator
 
-A comprehensive template for getting started with Context Engineering - the discipline of engineering context for AI coding assistants so they have the information necessary to get the job done end to end.
+An intelligent news aggregation system that fetches, analyzes, and curates AI/ML content from multiple sources using PydanticAI agents and semantic deduplication.
 
-> **Context Engineering is 10x better than prompt engineering and 100x better than vibe coding.**
+## 🚀 Features
 
-## 🚀 Quick Start
+- **Multi-Source Fetching**: Aggregates content from ArXiv, HackerNews, and RSS feeds
+- **AI-Powered Analysis**: Uses Google Gemini via PydanticAI for content relevance scoring
+- **Semantic Deduplication**: Vector embeddings with 85% similarity threshold for duplicate detection
+- **FastAPI Backend**: RESTful API with async/await patterns and background tasks
+- **Vector Search**: Supabase with pgvector for efficient similarity search
+- **Rate Limiting**: Respects API limits (ArXiv 3s delay, HackerNews 1 req/sec)
+- **Structured Data**: Pydantic models with validation and type safety
+
+## 🏗️ Architecture
+
+```
+src/
+├── agents/           # PydanticAI news analysis agents
+│   ├── news_agent.py # Main analysis agent with structured output
+│   └── prompts.py    # System prompts for AI analysis
+├── fetchers/         # Content fetching from multiple sources
+│   ├── base.py       # Abstract base fetcher with retry logic
+│   ├── arxiv_fetcher.py      # ArXiv API integration
+│   ├── hackernews_fetcher.py # HackerNews API integration
+│   ├── rss_fetcher.py        # RSS feed parsing
+│   └── factory.py    # Fetcher factory pattern
+├── services/         # Core business logic services
+│   ├── embeddings.py # HuggingFace embeddings generation
+│   └── deduplication.py # Semantic similarity detection
+├── models/           # Data models and schemas
+│   ├── articles.py   # Core article and digest models
+│   ├── schemas.py    # API request/response schemas
+│   └── database.py   # SQLAlchemy database models
+├── repositories/     # Data access layer
+│   └── articles.py   # Article CRUD operations
+├── api/              # FastAPI routes and endpoints
+│   ├── routes.py     # API endpoints
+│   └── dependencies.py # Dependency injection
+├── config.py         # Configuration management
+└── main.py          # FastAPI application entry point
+```
+
+## 🛠️ Installation
+
+### Prerequisites
+
+- Python 3.11+
+- Supabase account with pgvector extension
+- Google Gemini API key
+
+### Setup
+
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd ai-news-aggregator-agent
+   ```
+
+2. **Create virtual environment**
+   ```bash
+   python -m venv venv_linux
+   source venv_linux/bin/activate  # On Windows: venv_linux\Scripts\activate
+   ```
+
+3. **Install dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Set up environment variables**
+   ```bash
+   cp .env.example .env
+   # Edit .env with your configuration
+   ```
+
+5. **Configure database**
+   ```bash
+   # Run the SQL migration in your Supabase dashboard
+   cat migrations/001_initial_schema.sql
+   ```
+
+### Environment Configuration
+
+Required environment variables in `.env`:
+
+```env
+# Supabase Configuration
+SUPABASE_URL=your_supabase_project_url
+SUPABASE_ANON_KEY=your_supabase_anon_key
+
+# AI Configuration  
+GEMINI_API_KEY=your_google_gemini_api_key
+
+# Optional Configuration
+SIMILARITY_THRESHOLD=0.85
+EMBEDDINGS_MODEL=sentence-transformers/all-MiniLM-L6-v2
+LOG_LEVEL=INFO
+BATCH_SIZE=10
+MAX_CONCURRENT_REQUESTS=5
+```
+
+## 🚀 Usage
+
+### Starting the API Server
 
 ```bash
-# 1. Clone this template
-git clone https://github.com/coleam00/Context-Engineering-Intro.git
-cd Context-Engineering-Intro
-
-# 2. Set up your project rules (optional - template provided)
-# Edit CLAUDE.md to add your project-specific guidelines
-
-# 3. Add examples (highly recommended)
-# Place relevant code examples in the examples/ folder
-
-# 4. Create your initial feature request
-# Edit INITIAL.md with your feature requirements
-
-# 5. Generate a comprehensive PRP (Product Requirements Prompt)
-# In Claude Code, run:
-/generate-prp INITIAL.md
-
-# 6. Execute the PRP to implement your feature
-# In Claude Code, run:
-/execute-prp PRPs/your-feature-name.md
+source venv_linux/bin/activate
+python -m uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-## 📚 Table of Contents
+The API will be available at `http://localhost:8000` with interactive docs at `http://localhost:8000/docs`.
 
-- [What is Context Engineering?](#what-is-context-engineering)
-- [Template Structure](#template-structure)
-- [Step-by-Step Guide](#step-by-step-guide)
-- [Writing Effective INITIAL.md Files](#writing-effective-initialmd-files)
-- [The PRP Workflow](#the-prp-workflow)
-- [Using Examples Effectively](#using-examples-effectively)
-- [Best Practices](#best-practices)
+### API Endpoints
 
-## What is Context Engineering?
-
-Context Engineering represents a paradigm shift from traditional prompt engineering:
-
-### Prompt Engineering vs Context Engineering
-
-**Prompt Engineering:**
-- Focuses on clever wording and specific phrasing
-- Limited to how you phrase a task
-- Like giving someone a sticky note
-
-**Context Engineering:**
-- A complete system for providing comprehensive context
-- Includes documentation, examples, rules, patterns, and validation
-- Like writing a full screenplay with all the details
-
-### Why Context Engineering Matters
-
-1. **Reduces AI Failures**: Most agent failures aren't model failures - they're context failures
-2. **Ensures Consistency**: AI follows your project patterns and conventions
-3. **Enables Complex Features**: AI can handle multi-step implementations with proper context
-4. **Self-Correcting**: Validation loops allow AI to fix its own mistakes
-
-## Template Structure
-
+#### Health Check
+```http
+GET /health
 ```
-context-engineering-intro/
-├── .claude/
-│   ├── commands/
-│   │   ├── generate-prp.md    # Generates comprehensive PRPs
-│   │   └── execute-prp.md     # Executes PRPs to implement features
-│   └── settings.local.json    # Claude Code permissions
-├── PRPs/
-│   ├── templates/
-│   │   └── prp_base.md       # Base template for PRPs
-│   └── EXAMPLE_multi_agent_prp.md  # Example of a complete PRP
-├── examples/                  # Your code examples (critical!)
-├── CLAUDE.md                 # Global rules for AI assistant
-├── INITIAL.md               # Template for feature requests
-├── INITIAL_EXAMPLE.md       # Example feature request
-└── README.md                # This file
+Returns system status and database connectivity.
+
+#### List Articles
+```http
+GET /articles?limit=10&offset=0&source=arxiv&min_relevance_score=50&since_hours=24
 ```
+Retrieve paginated articles with filtering options.
 
-This template doesn't focus on RAG and tools with context engineering because I have a LOT more in store for that soon. ;)
+#### Get Article
+```http
+GET /articles/{article_id}
+```
+Fetch a specific article by ID.
 
-## Step-by-Step Guide
+#### Trigger Fetch
+```http
+POST /webhook/fetch
+Content-Type: application/json
 
-### 1. Set Up Global Rules (CLAUDE.md)
+{
+  "sources": ["arxiv", "hackernews", "rss"]
+}
+```
+Manually trigger article fetching from specified sources.
 
-The `CLAUDE.md` file contains project-wide rules that the AI assistant will follow in every conversation. The template includes:
+#### Get Statistics
+```http
+GET /stats
+```
+Retrieve aggregated statistics about articles and system performance.
 
-- **Project awareness**: Reading planning docs, checking tasks
-- **Code structure**: File size limits, module organization
-- **Testing requirements**: Unit test patterns, coverage expectations
-- **Style conventions**: Language preferences, formatting rules
-- **Documentation standards**: Docstring formats, commenting practices
+#### Analyze Article
+```http
+POST /articles/{article_id}/analyze
+```
+Re-run AI analysis on a specific article.
 
-**You can use the provided template as-is or customize it for your project.**
+#### Get Latest Digest
+```http
+GET /digest/latest
+```
+Retrieve the latest daily digest of top articles.
 
-### 2. Create Your Initial Feature Request
+## 🔄 Data Flow
 
-Edit `INITIAL.md` to describe what you want to build:
+1. **Fetching**: Background tasks collect articles from ArXiv, HackerNews, and RSS feeds
+2. **Analysis**: PydanticAI agent analyzes each article for AI/ML relevance (0-100 score)
+3. **Embedding**: Generate 384-dimension vectors using sentence-transformers
+4. **Deduplication**: Compare embeddings with 85% cosine similarity threshold
+5. **Storage**: Store unique articles in Supabase with vector indexes
+6. **API**: Serve processed articles through FastAPI endpoints
 
-```markdown
-## FEATURE:
-[Describe what you want to build - be specific about functionality and requirements]
+## 🧠 AI Analysis
 
-## EXAMPLES:
-[List any example files in the examples/ folder and explain how they should be used]
+The system uses Google Gemini through PydanticAI to analyze articles:
 
-## DOCUMENTATION:
-[Include links to relevant documentation, APIs, or MCP server resources]
-
-## OTHER CONSIDERATIONS:
-[Mention any gotchas, specific requirements, or things AI assistants commonly miss]
+```python
+# Analysis output structure
+class NewsAnalysis(BaseModel):
+    summary: str = Field(..., description="Concise summary")
+    relevance_score: int = Field(..., ge=0, le=100)
+    categories: List[str] = Field(..., description="AI/ML categories")
+    key_points: List[str] = Field(..., description="Main takeaways")
+    reasoning: str = Field(..., description="Score justification")
 ```
 
-**See `INITIAL_EXAMPLE.md` for a complete example.**
+Articles scoring below the relevance threshold (default 50) are filtered out.
 
-### 3. Generate the PRP
+## 🔍 Vector Search & Deduplication
 
-PRPs (Product Requirements Prompts) are comprehensive implementation blueprints that include:
+- **Model**: `sentence-transformers/all-MiniLM-L6-v2` (384 dimensions)
+- **Similarity**: Cosine similarity with 85% threshold
+- **Index**: HNSW index in Supabase pgvector for fast retrieval
+- **Caching**: In-memory embedding cache for performance
 
-- Complete context and documentation
-- Implementation steps with validation
-- Error handling patterns
-- Test requirements
+## 📊 Monitoring & Observability
 
-They are similar to PRDs (Product Requirements Documents) but are crafted more specifically to instruct an AI coding assistant.
+### Health Monitoring
+- Database connectivity checks
+- Fetcher status monitoring
+- Article processing statistics
+- Error rate tracking
 
-Run in Claude Code:
+### Logging
+Structured logging with configurable levels:
+```python
+# Key log events
+- Article fetch attempts and results
+- AI analysis outcomes
+- Deduplication decisions
+- API request/response cycles
+- Error conditions and retries
+```
+
+## 🧪 Testing
+
+### Running Tests
 ```bash
-/generate-prp INITIAL.md
+source venv_linux/bin/activate
+pytest tests/ -v
 ```
 
-**Note:** The slash commands are custom commands defined in `.claude/commands/`. You can view their implementation:
-- `.claude/commands/generate-prp.md` - See how it researches and creates PRPs
-- `.claude/commands/execute-prp.md` - See how it implements features from PRPs
+### Test Structure
+```
+tests/
+├── test_models/      # Pydantic model validation tests
+├── test_services/    # Business logic tests
+├── test_fetchers/    # External API integration tests
+└── test_api/        # FastAPI endpoint tests
+```
 
-The `$ARGUMENTS` variable in these commands receives whatever you pass after the command name (e.g., `INITIAL.md` or `PRPs/your-feature.md`).
+### Test Coverage
+- Unit tests for core models and services
+- Integration tests for external APIs
+- API endpoint testing with mock data
+- Error handling and edge cases
 
-This command will:
-1. Read your feature request
-2. Research the codebase for patterns
-3. Search for relevant documentation
-4. Create a comprehensive PRP in `PRPs/your-feature-name.md`
+## 🔧 Development
 
-### 4. Execute the PRP
-
-Once generated, execute the PRP to implement your feature:
-
+### Code Quality
 ```bash
-/execute-prp PRPs/your-feature-name.md
+# Type checking
+mypy src/
+
+# Linting and formatting
+ruff check src/ --fix
+
+# Run tests
+pytest tests/
 ```
 
-The AI coding assistant will:
-1. Read all context from the PRP
-2. Create a detailed implementation plan
-3. Execute each step with validation
-4. Run tests and fix any issues
-5. Ensure all success criteria are met
+### Key Patterns
 
-## Writing Effective INITIAL.md Files
-
-### Key Sections Explained
-
-**FEATURE**: Be specific and comprehensive
-- ❌ "Build a web scraper"
-- ✅ "Build an async web scraper using BeautifulSoup that extracts product data from e-commerce sites, handles rate limiting, and stores results in PostgreSQL"
-
-**EXAMPLES**: Leverage the examples/ folder
-- Place relevant code patterns in `examples/`
-- Reference specific files and patterns to follow
-- Explain what aspects should be mimicked
-
-**DOCUMENTATION**: Include all relevant resources
-- API documentation URLs
-- Library guides
-- MCP server documentation
-- Database schemas
-
-**OTHER CONSIDERATIONS**: Capture important details
-- Authentication requirements
-- Rate limits or quotas
-- Common pitfalls
-- Performance requirements
-
-## The PRP Workflow
-
-### How /generate-prp Works
-
-The command follows this process:
-
-1. **Research Phase**
-   - Analyzes your codebase for patterns
-   - Searches for similar implementations
-   - Identifies conventions to follow
-
-2. **Documentation Gathering**
-   - Fetches relevant API docs
-   - Includes library documentation
-   - Adds gotchas and quirks
-
-3. **Blueprint Creation**
-   - Creates step-by-step implementation plan
-   - Includes validation gates
-   - Adds test requirements
-
-4. **Quality Check**
-   - Scores confidence level (1-10)
-   - Ensures all context is included
-
-### How /execute-prp Works
-
-1. **Load Context**: Reads the entire PRP
-2. **Plan**: Creates detailed task list using TodoWrite
-3. **Execute**: Implements each component
-4. **Validate**: Runs tests and linting
-5. **Iterate**: Fixes any issues found
-6. **Complete**: Ensures all requirements met
-
-See `PRPs/EXAMPLE_multi_agent_prp.md` for a complete example of what gets generated.
-
-## Using Examples Effectively
-
-The `examples/` folder is **critical** for success. AI coding assistants perform much better when they can see patterns to follow.
-
-### What to Include in Examples
-
-1. **Code Structure Patterns**
-   - How you organize modules
-   - Import conventions
-   - Class/function patterns
-
-2. **Testing Patterns**
-   - Test file structure
-   - Mocking approaches
-   - Assertion styles
-
-3. **Integration Patterns**
-   - API client implementations
-   - Database connections
-   - Authentication flows
-
-4. **CLI Patterns**
-   - Argument parsing
-   - Output formatting
-   - Error handling
-
-### Example Structure
-
-```
-examples/
-├── README.md           # Explains what each example demonstrates
-├── cli.py             # CLI implementation pattern
-├── agent/             # Agent architecture patterns
-│   ├── agent.py      # Agent creation pattern
-│   ├── tools.py      # Tool implementation pattern
-│   └── providers.py  # Multi-provider pattern
-└── tests/            # Testing patterns
-    ├── test_agent.py # Unit test patterns
-    └── conftest.py   # Pytest configuration
+**Error Handling**: Circuit breaker pattern with exponential backoff
+```python
+# Fetcher retry logic with exponential backoff
+for attempt in range(self.max_retries):
+    try:
+        response = await self._make_request(url)
+        return response
+    except Exception as e:
+        if attempt < self.max_retries - 1:
+            await asyncio.sleep(2 ** attempt)
 ```
 
-## Best Practices
+**Rate Limiting**: Source-specific rate limiting
+```python
+# ArXiv requires 3-second delays
+self.client = arxiv.Client(delay_seconds=3.0)
 
-### 1. Be Explicit in INITIAL.md
-- Don't assume the AI knows your preferences
-- Include specific requirements and constraints
-- Reference examples liberally
+# HackerNews allows 1 request per second
+await asyncio.sleep(1.0)
+```
 
-### 2. Provide Comprehensive Examples
-- More examples = better implementations
-- Show both what to do AND what not to do
-- Include error handling patterns
+**Async Processing**: Concurrent operations with proper resource management
+```python
+# Batch processing with semaphore
+semaphore = asyncio.Semaphore(max_concurrent)
+tasks = [self._process_with_semaphore(item, semaphore) for item in items]
+results = await asyncio.gather(*tasks, return_exceptions=True)
+```
 
-### 3. Use Validation Gates
-- PRPs include test commands that must pass
-- AI will iterate until all validations succeed
-- This ensures working code on first try
+## 📈 Performance Considerations
 
-### 4. Leverage Documentation
-- Include official API docs
-- Add MCP server resources
-- Reference specific documentation sections
+- **Batch Processing**: Articles processed in configurable batches (default: 10)
+- **Connection Pooling**: Async HTTP clients with connection reuse
+- **Embedding Caching**: In-memory cache for generated embeddings
+- **Database Indexes**: HNSW vector indexes for fast similarity search
+- **Background Tasks**: Non-blocking article processing via FastAPI background tasks
 
-### 5. Customize CLAUDE.md
-- Add your conventions
-- Include project-specific rules
-- Define coding standards
+## 🔐 Security
 
-## Resources
+- **API Keys**: Secure handling via environment variables
+- **Input Validation**: Pydantic models validate all inputs
+- **SQL Injection**: Protected via SQLAlchemy ORM
+- **Rate Limiting**: Built-in protection against API abuse
+- **CORS**: Configurable CORS policies for API access
 
-- [Claude Code Documentation](https://docs.anthropic.com/en/docs/claude-code)
-- [Context Engineering Best Practices](https://www.philschmid.de/context-engineering)
+## 📚 Dependencies
+
+### Core Dependencies
+- **FastAPI**: Modern web framework for APIs
+- **PydanticAI**: Structured AI agent framework
+- **Supabase**: Backend-as-a-service with pgvector
+- **SQLAlchemy**: Python SQL toolkit and ORM
+- **sentence-transformers**: Embedding model library
+- **arxiv**: ArXiv API client library
+- **feedparser**: RSS feed parsing library
+
+### Development Dependencies
+- **pytest**: Testing framework
+- **mypy**: Static type checking
+- **ruff**: Fast Python linter and formatter
+- **uvicorn**: ASGI server for FastAPI
+
+## 🚦 Status
+
+✅ **Core Features Implemented**
+- Multi-source content fetching
+- AI-powered content analysis
+- Semantic deduplication
+- RESTful API with FastAPI
+- Vector search with Supabase
+- Comprehensive error handling
+
+🔄 **In Development**
+- Rate limiter service
+- Digest generation agent
+- Text-to-speech integration
+- Scheduled fetching automation
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📞 Support
+
+For questions and support:
+- Create an issue in the GitHub repository
+- Check the [documentation](docs/) for detailed guides
+- Review the [API documentation](http://localhost:8000/docs) when running locally
