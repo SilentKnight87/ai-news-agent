@@ -159,6 +159,16 @@ class DailyDigest(BaseModel):
         default_factory=list,
         description="Top articles included in this digest"
     )
+    
+    # AI-generated digest analysis
+    key_themes: list[str] = Field(
+        default_factory=list,
+        description="Key themes identified in today's articles"
+    )
+    notable_developments: list[str] = Field(
+        default_factory=list,
+        description="Most significant developments to highlight"
+    )
 
 
 class ArticleSimilarity(BaseModel):

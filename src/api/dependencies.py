@@ -12,7 +12,7 @@ from typing import Annotated
 from fastapi import Depends
 from supabase import Client, create_client
 
-from ..agents.news_agent import news_analyzer
+from ..agents.news_agent import get_news_analyzer as get_analyzer_instance
 from ..config import get_settings
 from ..repositories.articles import ArticleRepository
 from ..services.deduplication import DeduplicationService
@@ -77,7 +77,7 @@ def get_news_analyzer():
     Returns:
         NewsAnalyzer: News analyzer agent.
     """
-    return news_analyzer
+    return get_analyzer_instance()
 
 
 def get_embeddings_service():

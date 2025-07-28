@@ -21,6 +21,7 @@ sqlalchemy
 
 # Utilities
 tenacity
+aiofiles
 
 # Dev/Test
 pytest

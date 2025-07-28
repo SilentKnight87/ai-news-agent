@@ -49,22 +49,11 @@ class Settings(BaseSettings):
     debug: bool = Field(False, description="Enable debug mode")
     log_level: str = Field("INFO", description="Logging level")
 
-    class Config:
-        """Pydantic configuration."""
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        case_sensitive = False
-
-        # Environment variable names
-        fields = {
-            "supabase_url": {"env": "SUPABASE_URL"},
-            "supabase_anon_key": {"env": "SUPABASE_ANON_KEY"},
-            "gemini_api_key": {"env": "GEMINI_API_KEY"},
-            "elevenlabs_api_key": {"env": "ELEVENLABS_API_KEY"},
-            "hf_api_key": {"env": "HF_API_KEY"},
-            "fetch_interval_minutes": {"env": "FETCH_INTERVAL_MINUTES"},
-            "digest_hour_utc": {"env": "DIGEST_HOUR_UTC"},
-        }
+    model_config = {
+        "env_file": ".env",
+        "env_file_encoding": "utf-8", 
+        "case_sensitive": False,
+    }
 
 
 @lru_cache

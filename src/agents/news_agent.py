@@ -29,12 +29,16 @@ class NewsAnalyzer:
 
     def __init__(self):
         """Initialize the news analyzer agent."""
+        import os
         self.settings = get_settings()
+
+        # Set GOOGLE_API_KEY environment variable for PydanticAI
+        os.environ['GOOGLE_API_KEY'] = self.settings.gemini_api_key
 
         # Initialize PydanticAI agent with Gemini
         self.agent = Agent(
             model='gemini-1.5-flash',
-            result_type=NewsAnalysis,
+            output_type=NewsAnalysis,
             system_prompt=NEWS_ANALYSIS_PROMPT,
         )
 
@@ -158,10 +162,16 @@ Content: {content}
             bool: True if article appears relevant to AI/ML.
         """
         try:
+            # Ensure environment variable is set
+            import os
+            from ..config import get_settings
+            settings = get_settings()
+            os.environ['GOOGLE_API_KEY'] = settings.gemini_api_key
+
             # Use a simpler agent for quick filtering
             filter_agent = Agent(
                 model='gemini-1.5-flash',
-                result_type=str,
+                output_type=str,
                 system_prompt="""You are a content filter. Respond with only "RELEVANT" or "NOT_RELEVANT"
                                 based on whether the content is about AI, ML, or related technologies."""
             )
@@ -245,5 +255,12 @@ Content: {content}
         return relevant_articles
 
 
-# Global analyzer instance
-news_analyzer = NewsAnalyzer()
+# Global analyzer instance (lazy initialization)
+_news_analyzer = None
+
+def get_news_analyzer() -> NewsAnalyzer:
+    """Get the global news analyzer instance (lazy initialization)."""
+    global _news_analyzer
+    if _news_analyzer is None:
+        _news_analyzer = NewsAnalyzer()
+    return _news_analyzer

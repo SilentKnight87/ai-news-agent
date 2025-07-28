@@ -7,6 +7,7 @@ and startup/shutdown event handlers.
 
 import logging
 import sys
+import os
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
@@ -18,13 +19,16 @@ from .api.routes import router
 from .config import get_settings
 
 # Configure logging
+handlers = [logging.StreamHandler(sys.stdout)]
+
+# Add file handler if logs directory exists
+if os.path.exists("logs"):
+    handlers.append(logging.FileHandler("logs/app.log", mode="a"))
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    handlers=[
-        logging.StreamHandler(sys.stdout),
-        logging.FileHandler("logs/app.log", mode="a")
-    ]
+    handlers=handlers
 )
 
 logger = logging.getLogger(__name__)

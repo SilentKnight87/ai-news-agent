@@ -418,14 +418,4 @@ async def fetch_articles_background(
         logger.error(f"Background fetch failed: {e}")
 
 
-# Error handlers
-@router.exception_handler(HTTPException)
-async def http_exception_handler(request, exc: HTTPException):
-    """Handle HTTP exceptions with structured error response."""
-    return JSONResponse(
-        status_code=exc.status_code,
-        content=ErrorResponse(
-            error=exc.detail,
-            error_code=f"HTTP_{exc.status_code}"
-        ).dict()
-    )
+# Note: Exception handlers are configured in main.py
