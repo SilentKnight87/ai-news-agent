@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI News Aggregator - Netflix Style</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Navigation Header -->
+    <nav class="navbar">
+        <div class="nav-content">
+            <div class="nav-brand">
+                <h1>AI News</h1>
+            </div>
+            <div class="nav-menu">
+                <a href="#" class="nav-link active">Home</a>
+                <a href="#" class="nav-link">ArXiv</a>
+                <a href="#" class="nav-link">Hacker News</a>
+                <a href="#" class="nav-link">RSS Feeds</a>
+            </div>
+            <div class="nav-actions">
+                <button class="stats-btn">📊</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <div class="hero-text">
+                <h1 class="hero-title">AI News Aggregator</h1>
+                <p class="hero-description">
+                    Stay updated with the latest developments in AI and machine learning. Our intelligent system analyzes and curates the most relevant articles from ArXiv papers, Hacker News discussions, and leading tech publications.
+                </p>
+                <div class="hero-stats">
+                    <div class="stat-card">
+                        <span class="stat-number">2,847</span>
+                        <span class="stat-label">Total Articles</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-number">89%</span>
+                        <span class="stat-label">Avg Relevance</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-number">24/7</span>
+                        <span class="stat-label">Auto Updates</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="hero-overlay"></div>
+    </section>
+
+    <!-- Content Rows -->
+    <main class="content">
+        <!-- Daily Digest Section -->
+        <section class="content-row">
+            <h2 class="row-title">🎧 Daily AI Digests</h2>
+            <div class="cards-container">
+                <!-- Today's Digest -->
+                <div class="digest-card">
+                    <div class="digest-date">Today</div>
+                    <div class="digest-content">
+                        <h3>AI Breakthroughs & Ethics</h3>
+                        <p class="digest-meta">10 articles • 15 min audio</p>
+                        <div class="digest-themes">
+                            <span class="theme-tag">LLMs</span>
+                            <span class="theme-tag">Computer Vision</span>
+                            <span class="theme-tag">AI Ethics</span>
+                        </div>
+                        <div class="digest-summary">
+                            Today's digest covers major advances in large language model efficiency, breakthrough computer vision techniques for medical imaging, and important discussions on AI safety frameworks...
+                        </div>
+                        <div class="audio-controls-mini">
+                            <button class="play-btn-mini">▶️ Play</button>
+                            <div class="progress-bar-mini">
+                                <div class="progress-fill" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Yesterday's Digest -->
+                <div class="digest-card">
+                    <div class="digest-date">Yesterday</div>
+                    <div class="digest-content">
+                        <h3>Open Source AI Revolution</h3>
+                        <p class="digest-meta">8 articles • 12 min audio</p>
+                        <div class="digest-themes">
+                            <span class="theme-tag">Open Source</span>
+                            <span class="theme-tag">Model Training</span>
+                        </div>
+                        <div class="digest-summary">
+                            Yesterday's highlights include the release of several open-source alternatives to GPT-4, new efficient training methods that reduce costs by 60%, and community discussions on democratizing AI...
+                        </div>
+                        <div class="audio-controls-mini">
+                            <button class="play-btn-mini">▶️ Play</button>
+                            <div class="progress-bar-mini">
+                                <div class="progress-fill" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2 Days Ago -->
+                <div class="digest-card">
+                    <div class="digest-date">Jan 28</div>
+                    <div class="digest-content">
+                        <h3>Multimodal AI Advances</h3>
+                        <p class="digest-meta">12 articles • 18 min audio</p>
+                        <div class="digest-themes">
+                            <span class="theme-tag">Multimodal</span>
+                            <span class="theme-tag">Vision-Language</span>
+                        </div>
+                        <div class="digest-summary">
+                            Major developments in multimodal AI systems that can process text, images, and audio simultaneously. New benchmarks show impressive performance gains...
+                        </div>
+                        <div class="audio-controls-mini">
+                            <button class="play-btn-mini">▶️ Play</button>
+                            <div class="progress-bar-mini">
+                                <div class="progress-fill" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3 Days Ago -->
+                <div class="digest-card">
+                    <div class="digest-date">Jan 27</div>
+                    <div class="digest-content">
+                        <h3>AI in Scientific Discovery</h3>
+                        <p class="digest-meta">9 articles • 14 min audio</p>
+                        <div class="digest-themes">
+                            <span class="theme-tag">Science</span>
+                            <span class="theme-tag">Research</span>
+                        </div>
+                        <div class="digest-summary">
+                            AI systems are accelerating scientific discovery across multiple domains, from protein folding to climate modeling. Key breakthroughs in automated hypothesis generation...
+                        </div>
+                        <div class="audio-controls-mini">
+                            <button class="play-btn-mini">▶️ Play</button>
+                            <div class="progress-bar-mini">
+                                <div class="progress-fill" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="scroll-controls">
+                <button class="scroll-btn scroll-left">‹</button>
+                <button class="scroll-btn scroll-right">›</button>
+            </div>
+        </section>
+
+        <!-- Top Relevance Articles -->
+        <section class="content-row">
+            <h2 class="row-title">⭐ Highest Relevance (90%+)</h2>
+            <div class="cards-container">
+                <div class="card">
+                    <div class="card-image">
+                        <div class="card-placeholder">AI</div>
+                    </div>
+                    <div class="card-content">
+                        <h3>Attention Mechanisms in Vision Transformers: A Comprehensive Survey</h3>
+                        <p class="card-meta">ArXiv • Relevance: 95%</p>
+                        <div class="card-categories">
+                            <span class="category-tag">Computer Vision</span>
+                            <span class="category-tag">Transformers</span>
+                        </div>
+                        <p class="card-summary">This paper presents a comprehensive survey of attention mechanisms in vision transformers, analyzing recent advances and comparing performance across different architectures...</p>
+                        <div class="key-points">
+                            <p class="key-point">• Novel attention mechanism reduces computational complexity by 40%</p>
+                            <p class="key-point">• Achieves SOTA on ImageNet with 87.3% accuracy</p>
+                        </div>
+                    </div>
+                    <div class="card-hover-preview">
+                        <p class="preview-text">This paper presents a comprehensive survey of attention mechanisms in vision transformers, analyzing recent advances and comparing performance across different architectures. The authors propose a novel taxonomy for categorizing attention mechanisms and provide empirical comparisons on standard benchmarks...</p>
+                        <button class="preview-btn">Click to read full analysis →</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-image">
+                        <div class="card-placeholder">HN</div>
+                    </div>
+                    <div class="card-content">
+                        <h3>Show HN: Open-source LLM fine-tuning framework</h3>
+                        <p class="card-meta">Hacker News • Relevance: 92%</p>
+                        <div class="card-categories">
+                            <span class="category-tag">Open Source</span>
+                            <span class="category-tag">LLMs</span>
+                        </div>
+                        <p class="card-summary">A new open-source framework for fine-tuning large language models with minimal compute resources, achieving comparable results to commercial solutions...</p>
+                        <div class="key-points">
+                            <p class="key-point">• Reduces memory usage by 70% using novel quantization</p>
+                            <p class="key-point">• Compatible with all major LLM architectures</p>
+                        </div>
+                    </div>
+                    <div class="card-hover-preview">
+                        <p class="preview-text">A new open-source framework for fine-tuning large language models with minimal compute resources, achieving comparable results to commercial solutions. The framework introduces novel quantization techniques that maintain model quality while drastically reducing memory requirements...</p>
+                        <button class="preview-btn">Click to read full analysis →</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-image">
+                        <div class="card-placeholder">RSS</div>
+                    </div>
+                    <div class="card-content">
+                        <h3>Google Announces Gemini 2.0 with Enhanced Reasoning</h3>
+                        <p class="card-meta">TechCrunch • Relevance: 91%</p>
+                        <div class="card-categories">
+                            <span class="category-tag">Large Language Models</span>
+                            <span class="category-tag">Google AI</span>
+                        </div>
+                        <p class="card-summary">Google unveils Gemini 2.0 with significant improvements in mathematical reasoning and code generation, benchmarking ahead of GPT-4 in several key areas...</p>
+                        <div class="key-points">
+                            <p class="key-point">• 2x improvement in mathematical reasoning tasks</p>
+                            <p class="key-point">• Native multimodal understanding across 100+ languages</p>
+                        </div>
+                    </div>
+                    <div class="card-hover-preview">
+                        <p class="preview-text">Google unveils Gemini 2.0 with significant improvements in mathematical reasoning and code generation, benchmarking ahead of GPT-4 in several key areas. The model demonstrates enhanced capabilities in multi-step reasoning tasks and shows remarkable performance on competitive programming challenges...</p>
+                        <button class="preview-btn">Click to read full analysis →</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-image">
+                        <div class="card-placeholder">AI</div>
+                    </div>
+                    <div class="card-content">
+                        <h3>Federated Learning for Privacy-Preserving AI</h3>
+                        <p class="card-meta">ArXiv • Relevance: 90%</p>
+                        <div class="card-categories">
+                            <span class="category-tag">Privacy</span>
+                            <span class="category-tag">Distributed ML</span>
+                        </div>
+                        <p class="card-summary">Novel federated learning approach enables training on sensitive data without compromising privacy, showing promising results in healthcare applications...</p>
+                        <div class="key-points">
+                            <p class="key-point">• Maintains 98% accuracy while preserving data privacy</p>
+                            <p class="key-point">• Reduces communication overhead by 60%</p>
+                        </div>
+                    </div>
+                    <div class="card-hover-preview">
+                        <p class="preview-text">Novel federated learning approach enables training on sensitive data without compromising privacy, showing promising results in healthcare applications. The method uses differential privacy techniques combined with secure aggregation protocols to ensure patient data remains confidential...</p>
+                        <button class="preview-btn">Click to read full analysis →</button>
+                    </div>
+                </div>
+
+            </div>
+            <div class="scroll-controls">
+                <button class="scroll-btn scroll-left">‹</button>
+                <button class="scroll-btn scroll-right">›</button>
+            </div>
+        </section>
+
+        <!-- Recent Articles (Last 24 hours) -->
+        <section class="content-row">
+            <h2 class="row-title">🕐 Recent Articles (Last 24 hours)</h2>
+            <div class="cards-container">
+                <div class="card">
+                    <div class="card-image">
+                        <div class="card-placeholder">AI</div>
+                    </div>
+                    <div class="card-content">
+                        <h3>Efficient Training of Large Language Models</h3>
+                        <p class="card-meta">ArXiv • Relevance: 88% • 2 hours ago</p>
+                        <div class="card-categories">
+                            <span class="category-tag">LLMs</span>
+                            <span class="category-tag">Optimization</span>
+                        </div>
+                        <p class="card-summary">New training methodology reduces computational requirements for LLMs by 45% while maintaining performance...</p>
+                        <div class="key-points">
+                            <p class="key-point">• Novel gradient accumulation technique</p>
+                            <p class="key-point">• Tested on models up to 70B parameters</p>
+                        </div>
+                    </div>
+                    <div class="card-hover-preview">
+                        <p class="preview-text">New training methodology reduces computational requirements for LLMs by 45% while maintaining performance. The approach combines gradient checkpointing with a novel memory-efficient attention mechanism that allows training of 70B parameter models on consumer hardware...</p>
+                        <button class="preview-btn">Click to read full analysis →</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-image">
+                        <div class="card-placeholder">ML</div>
+                    </div>
+                    <div class="card-content">
+                        <h3>Real-time Object Detection on Mobile Devices</h3>
+                        <p class="card-meta">RSS - VentureBeat • Relevance: 85% • 5 hours ago</p>
+                        <div class="card-categories">
+                            <span class="category-tag">Computer Vision</span>
+                            <span class="category-tag">Mobile AI</span>
+                        </div>
+                        <p class="card-summary">Apple researchers demonstrate real-time object detection running entirely on-device with new efficient architecture...</p>
+                        <div class="key-points">
+                            <p class="key-point">• 30 FPS on iPhone 15 Pro</p>
+                            <p class="key-point">• 95% accuracy on COCO dataset</p>
+                        </div>
+                    </div>
+                    <div class="card-hover-preview">
+                        <p class="preview-text">Apple researchers demonstrate real-time object detection running entirely on-device with new efficient architecture. The model uses depthwise separable convolutions and knowledge distillation to achieve remarkable efficiency without sacrificing accuracy...</p>
+                        <button class="preview-btn">Click to read full analysis →</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-image">
+                        <div class="card-placeholder">HN</div>
+                    </div>
+                    <div class="card-content">
+                        <h3>Ask HN: Best practices for RAG systems in production?</h3>
+                        <p class="card-meta">Hacker News • Relevance: 82% • 8 hours ago</p>
+                        <div class="card-categories">
+                            <span class="category-tag">RAG</span>
+                            <span class="category-tag">Production ML</span>
+                        </div>
+                        <p class="card-summary">Community discussion on implementing retrieval-augmented generation systems at scale, with insights from engineers at major tech companies...</p>
+                        <div class="key-points">
+                            <p class="key-point">• Vector database comparison and benchmarks</p>
+                            <p class="key-point">• Chunking strategies for different document types</p>
+                        </div>
+                    </div>
+                    <div class="card-hover-preview">
+                        <p class="preview-text">Community discussion on implementing retrieval-augmented generation systems at scale, with insights from engineers at major tech companies. Key topics include vector database selection, chunking strategies, and handling real-time updates in production environments...</p>
+                        <button class="preview-btn">Click to read full analysis →</button>
+                    </div>
+                </div>
+            </div>
+            <div class="scroll-controls">
+                <button class="scroll-btn scroll-left">‹</button>
+                <button class="scroll-btn scroll-right">›</button>
+            </div>
+        </section>
+
+        <!-- Articles by Source -->
+        <section class="content-row">
+            <h2 class="row-title">📄 Latest from ArXiv</h2>
+            <div class="cards-container">
+                <div class="card">
+                    <div class="card-image">
+                        <div class="card-placeholder">ARXIV</div>
+                    </div>
+                    <div class="card-content">
+                        <h3>Scaling Laws for Neural Language Models Revisited</h3>
+                        <p class="card-meta">ArXiv • Relevance: 87% • cs.LG</p>
+                        <div class="card-categories">
+                            <span class="category-tag">Scaling Laws</span>
+                            <span class="category-tag">LLMs</span>
+                            <span class="category-tag">Theory</span>
+                        </div>
+                        <p class="card-summary">Empirical study challenges existing scaling laws, proposing new formulations that better predict model performance...</p>
+                        <div class="key-points">
+                            <p class="key-point">• New scaling law accounts for data quality</p>
+                        </div>
+                    </div>
+                    <div class="card-hover-preview">
+                        <p class="preview-text">Empirical study challenges existing scaling laws, proposing new formulations that better predict model performance. The research reveals that data quality has a more significant impact on model capabilities than previously thought, suggesting new directions for efficient training...</p>
+                        <button class="preview-btn">Click to read full analysis →</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-image">
+                        <div class="card-placeholder">ARXIV</div>
+                    </div>
+                    <div class="card-content">
+                        <h3>Self-Supervised Learning for Time Series Analysis</h3>
+                        <p class="card-meta">ArXiv • Relevance: 84% • cs.AI</p>
+                        <div class="card-categories">
+                            <span class="category-tag">Self-Supervised</span>
+                            <span class="category-tag">Time Series</span>
+                        </div>
+                        <p class="card-summary">Novel self-supervised approach for time series forecasting outperforms supervised baselines on multiple benchmarks...</p>
+                        <div class="key-points">
+                            <p class="key-point">• 20% improvement on financial time series</p>
+                        </div>
+                    </div>
+                    <div class="card-hover-preview">
+                        <p class="preview-text">Novel self-supervised approach for time series forecasting outperforms supervised baselines on multiple benchmarks. The method learns temporal patterns without labeled data, making it particularly valuable for domains where annotations are expensive or unavailable...</p>
+                        <button class="preview-btn">Click to read full analysis →</button>
+                    </div>
+                </div>
+
+            </div>
+            <div class="scroll-controls">
+                <button class="scroll-btn scroll-left">‹</button>
+                <button class="scroll-btn scroll-right">›</button>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modal for Article Details -->
+    <div id="articleModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Article Title</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="modalContent">Article content will be loaded here...</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-primary" id="viewSourceBtn">View Original Source</button>
+                <button class="btn-secondary" onclick="closeModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
