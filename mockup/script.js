@@ -362,19 +362,19 @@ function showStatsModal() {
             <h3>System Overview</h3>
             <div class="stats-grid">
                 <div class="stat-item">
-                    <span class="stat-value">2,847</span>
+                    <span class="stat-value">34</span>
                     <span class="stat-label">Total Articles</span>
                 </div>
                 <div class="stat-item">
-                    <span class="stat-value">1,234</span>
+                    <span class="stat-value">34</span>
                     <span class="stat-label">ArXiv Papers</span>
                 </div>
                 <div class="stat-item">
-                    <span class="stat-value">892</span>
+                    <span class="stat-value">0</span>
                     <span class="stat-label">HackerNews</span>
                 </div>
                 <div class="stat-item">
-                    <span class="stat-value">721</span>
+                    <span class="stat-value">0</span>
                     <span class="stat-label">RSS Articles</span>
                 </div>
             </div>
@@ -382,11 +382,11 @@ function showStatsModal() {
             <h3>Analysis Metrics</h3>
             <div class="stats-grid">
                 <div class="stat-item">
-                    <span class="stat-value">89.3%</span>
+                    <span class="stat-value">87.9%</span>
                     <span class="stat-label">Avg Relevance Score</span>
                 </div>
                 <div class="stat-item">
-                    <span class="stat-value">342</span>
+                    <span class="stat-value">0</span>
                     <span class="stat-label">Duplicates Detected</span>
                 </div>
                 <div class="stat-item">
@@ -402,25 +402,32 @@ function showStatsModal() {
             <h3>Top Categories</h3>
             <div class="category-stats">
                 <div class="category-bar">
-                    <span class="category-name">Large Language Models</span>
+                    <span class="category-name">Research</span>
                     <div class="category-progress">
-                        <div class="category-fill" style="width: 85%"></div>
+                        <div class="category-fill" style="width: 94%"></div>
                     </div>
-                    <span class="category-count">423</span>
+                    <span class="category-count">32</span>
                 </div>
                 <div class="category-bar">
-                    <span class="category-name">Computer Vision</span>
+                    <span class="category-name">Technical Tutorial</span>
                     <div class="category-progress">
-                        <div class="category-fill" style="width: 70%"></div>
+                        <div class="category-fill" style="width: 65%"></div>
                     </div>
-                    <span class="category-count">351</span>
+                    <span class="category-count">22</span>
                 </div>
                 <div class="category-bar">
-                    <span class="category-name">Reinforcement Learning</span>
+                    <span class="category-name">Industry Analysis</span>
                     <div class="category-progress">
-                        <div class="category-fill" style="width: 45%"></div>
+                        <div class="category-fill" style="width: 15%"></div>
                     </div>
-                    <span class="category-count">225</span>
+                    <span class="category-count">5</span>
+                </div>
+                <div class="category-bar">
+                    <span class="category-name">Open Source</span>
+                    <div class="category-progress">
+                        <div class="category-fill" style="width: 15%"></div>
+                    </div>
+                    <span class="category-count">5</span>
                 </div>
             </div>
         </div>

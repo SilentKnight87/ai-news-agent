@@ -1,0 +1,23 @@
+{
+  "feeds": {
+    "company_blogs": {
+      "OpenAI Blog": "https://openai.com/index/rss.xml",
+      "Anthropic Blog": "https://www.anthropic.com/index.xml",
+      "Google AI Blog": "https://ai.googleblog.com/feeds/posts/default",
+      "Hugging Face Blog": "https://huggingface.co/blog/feed.xml",
+      "Meta AI Research": "https://ai.facebook.com/blog/rss/",
+      "DeepMind Blog": "https://deepmind.com/blog/rss/",
+      "Microsoft Research AI": "https://www.microsoft.com/en-us/research/feed/"
+    },
+    "tech_news": {
+      "TechCrunch AI": "https://techcrunch.com/category/artificial-intelligence/feed/",
+      "The Verge AI": "https://www.theverge.com/ai-artificial-intelligence/rss/index.xml",
+      "VentureBeat AI": "https://venturebeat.com/ai/feed/",
+      "MIT Technology Review AI": "https://www.technologyreview.com/topic/artificial-intelligence/feed/"
+    },
+    "cloud_providers": {
+      "AWS Machine Learning Blog": "https://aws.amazon.com/blogs/machine-learning/feed/",
+      "Google Cloud AI Blog": "https://cloud.google.com/blog/topics/ai-machine-learning/rss"
+    }
+  }
+}

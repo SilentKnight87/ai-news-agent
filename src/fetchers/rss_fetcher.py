@@ -6,8 +6,10 @@ error handling and date parsing for different feed formats.
 """
 
 import asyncio
+import json
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
 import feedparser
 import httpx
@@ -26,37 +28,29 @@ class RSSFetcher(BaseFetcher):
     graceful degradation if some feeds fail.
     """
 
-    def __init__(self):
-        """Initialize RSS fetcher with feed URLs."""
+    def __init__(self, config_path: str | None = None):
+        """Initialize RSS fetcher with feed URLs from configuration file.
+        
+        Args:
+            config_path: Path to RSS feeds configuration file. 
+                        If None, uses default path 'config/rss_feeds.json'
+        """
         super().__init__(source=ArticleSource.RSS, rate_limit_delay=2.0)
 
-        # MVP RSS feeds from INITIAL.md
-        self.feed_urls = {
-            # Company blogs
-            "OpenAI Blog": "https://openai.com/index/rss.xml",
-            "Anthropic Blog": "https://www.anthropic.com/index.xml",
-            "Google AI Blog": "https://ai.googleblog.com/feeds/posts/default",
-            "Hugging Face Blog": "https://huggingface.co/blog/feed.xml",
-            "Meta AI Research": "https://ai.facebook.com/blog/rss/",
-            "DeepMind Blog": "https://deepmind.com/blog/rss/",
-            "Microsoft Research AI": "https://www.microsoft.com/en-us/research/feed/",
-
-            # Academic and research
-            "MIT CSAIL News": "https://www.csail.mit.edu/news/rss.xml",
-            "Papers with Code": "https://paperswithcode.com/latest.rss",
-
-            # Industry news
-            "TechCrunch AI": "https://techcrunch.com/category/artificial-intelligence/feed/",
-            "The Verge AI": "https://www.theverge.com/ai-artificial-intelligence/rss/index.xml",
-            "VentureBeat AI": "https://venturebeat.com/ai/feed/",
-            "MIT Technology Review AI": "https://www.technologyreview.com/topic/artificial-intelligence/feed/",
-
-            # Cloud providers
-            "AWS Machine Learning Blog": "https://aws.amazon.com/blogs/machine-learning/feed/",
-            "Google Cloud AI Blog": "https://cloud.google.com/blog/topics/ai-machine-learning/rss",
-        }
-
+        # Set config path
+        if config_path is None:
+            # Get project root directory (where main.py is located)
+            project_root = Path(__file__).parent.parent.parent
+            config_path = project_root / "config" / "rss_feeds.json"
+        else:
+            config_path = Path(config_path)
+            
+        self.config_path = config_path
+        self.feed_urls = {}
         self.timeout = 10.0  # 10 second timeout per feed
+
+        # Load feeds from configuration
+        self._load_feeds_from_config()
 
         logger.info(f"RSS fetcher initialized with {len(self.feed_urls)} feeds")
 
@@ -229,7 +223,7 @@ class RSSFetcher(BaseFetcher):
         published_at = self._parse_entry_date(entry)
         if not published_at:
             # Use current time if no date available
-            published_at = datetime.utcnow()
+            published_at = datetime.now(timezone.utc)
 
         # Create unique source ID
         source_id = self._generate_source_id(entry, url)
@@ -242,7 +236,7 @@ class RSSFetcher(BaseFetcher):
             url=url,
             author=author,
             published_at=published_at,
-            fetched_at=datetime.utcnow()
+            fetched_at=datetime.now(timezone.utc)
         )
 
     def _parse_entry_date(self, entry: feedparser.FeedParserDict) -> datetime | None:
@@ -316,7 +310,7 @@ class RSSFetcher(BaseFetcher):
         Returns:
             List[Article]: Recent articles.
         """
-        cutoff_date = datetime.utcnow() - timedelta(hours=hours)
+        cutoff_date = datetime.now(timezone.utc) - timedelta(hours=hours)
 
         # Fetch all articles and filter by date
         articles = await self.fetch(max_articles=500)  # Fetch more to account for filtering
@@ -338,20 +332,101 @@ class RSSFetcher(BaseFetcher):
         """
         return self.feed_urls.copy()
 
-    def add_feed(self, name: str, url: str) -> None:
+    def _load_feeds_from_config(self) -> None:
         """
-        Add a new RSS feed.
+        Load RSS feed URLs from configuration file.
+        
+        Creates default config if file doesn't exist.
+        """
+        if not self.config_path.exists():
+            logger.warning(f"RSS config file not found at {self.config_path}, creating default")
+            self._create_default_config()
+            
+        try:
+            with open(self.config_path, 'r') as f:
+                config = json.load(f)
+                
+            # Flatten nested feed structure into single dict
+            self.feed_urls = {}
+            feeds = config.get('feeds', {})
+            
+            for category, category_feeds in feeds.items():
+                if isinstance(category_feeds, dict):
+                    self.feed_urls.update(category_feeds)
+                else:
+                    logger.warning(f"Invalid feed category format: {category}")
+                    
+            logger.info(f"Loaded {len(self.feed_urls)} RSS feeds from {self.config_path}")
+            
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse RSS config file: {e}")
+            logger.info("Using empty feed list")
+            self.feed_urls = {}
+        except Exception as e:
+            logger.error(f"Failed to load RSS config: {e}")
+            logger.info("Using empty feed list")
+            self.feed_urls = {}
+            
+    def _create_default_config(self) -> None:
+        """Create default RSS feeds configuration file."""
+        default_config = {
+            "feeds": {
+                "company_blogs": {
+                    "OpenAI Blog": "https://openai.com/index/rss.xml",
+                    "Anthropic Blog": "https://www.anthropic.com/index.xml",
+                    "Google AI Blog": "https://ai.googleblog.com/feeds/posts/default",
+                    "Hugging Face Blog": "https://huggingface.co/blog/feed.xml",
+                    "Meta AI Research": "https://ai.facebook.com/blog/rss/",
+                    "DeepMind Blog": "https://deepmind.com/blog/rss/",
+                    "Microsoft Research AI": "https://www.microsoft.com/en-us/research/feed/"
+                },
+                "tech_news": {
+                    "TechCrunch AI": "https://techcrunch.com/category/artificial-intelligence/feed/",
+                    "The Verge AI": "https://www.theverge.com/ai-artificial-intelligence/rss/index.xml",
+                    "VentureBeat AI": "https://venturebeat.com/ai/feed/",
+                    "MIT Technology Review AI": "https://www.technologyreview.com/topic/artificial-intelligence/feed/"
+                },
+                "cloud_providers": {
+                    "AWS Machine Learning Blog": "https://aws.amazon.com/blogs/machine-learning/feed/",
+                    "Google Cloud AI Blog": "https://cloud.google.com/blog/topics/ai-machine-learning/rss"
+                }
+            }
+        }
+        
+        # Ensure config directory exists
+        self.config_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        try:
+            with open(self.config_path, 'w') as f:
+                json.dump(default_config, f, indent=2)
+            logger.info(f"Created default RSS config at {self.config_path}")
+        except Exception as e:
+            logger.error(f"Failed to create default config: {e}")
+
+    def add_feed(self, name: str, url: str, category: str = "custom") -> None:
+        """
+        Add a new RSS feed and persist to configuration.
 
         Args:
             name: Human-readable feed name.
             url: RSS feed URL.
+            category: Category to add the feed under (default: "custom")
         """
+        # Validate URL format
+        if not self._validate_feed_url(url):
+            raise ValueError(f"Invalid RSS feed URL: {url}")
+            
+        # Add to in-memory feed list
         self.feed_urls[name] = url
-        logger.info(f"Added RSS feed: {name} ({url})")
+        
+        # Update configuration file
+        self._update_config_file(name, url, category, action="add")
+        
+        logger.info(f"Added RSS feed: {name} ({url}) to category '{category}'")
 
     def remove_feed(self, name: str) -> bool:
         """
-        Remove an RSS feed.
+        Remove an RSS feed and update configuration.
 
         Args:
             name: Feed name to remove.
@@ -360,7 +435,92 @@ class RSSFetcher(BaseFetcher):
             bool: True if feed was removed, False if not found.
         """
         if name in self.feed_urls:
+            # Remove from in-memory list
             del self.feed_urls[name]
+            
+            # Update configuration file
+            self._update_config_file(name, None, None, action="remove")
+            
             logger.info(f"Removed RSS feed: {name}")
             return True
         return False
+    
+    def _validate_feed_url(self, url: str) -> bool:
+        """
+        Validate that the URL looks like a valid RSS feed URL.
+        
+        Args:
+            url: URL to validate
+            
+        Returns:
+            bool: True if URL appears valid
+        """
+        if not url or not isinstance(url, str):
+            return False
+            
+        # Check basic URL format
+        if not (url.startswith("http://") or url.startswith("https://")):
+            return False
+            
+        # Check for common RSS indicators
+        rss_indicators = [".xml", ".rss", "/feed", "/rss", "feed/", "rss/"]
+        url_lower = url.lower()
+        
+        # Allow any URL but warn if it doesn't look like RSS
+        has_rss_indicator = any(indicator in url_lower for indicator in rss_indicators)
+        if not has_rss_indicator:
+            logger.warning(f"URL '{url}' doesn't contain common RSS indicators, but allowing it")
+            
+        return True
+    
+    def _update_config_file(self, name: str, url: str | None, category: str | None, action: str) -> None:
+        """
+        Update the configuration file with feed changes.
+        
+        Args:
+            name: Feed name
+            url: Feed URL (None for removal)
+            category: Feed category (None for removal)
+            action: "add" or "remove"
+        """
+        try:
+            # Load current config
+            config = {}
+            if self.config_path.exists():
+                with open(self.config_path, 'r') as f:
+                    config = json.load(f)
+                    
+            feeds = config.get('feeds', {})
+            
+            if action == "add":
+                # Ensure category exists
+                if category not in feeds:
+                    feeds[category] = {}
+                    
+                # Add feed to category
+                feeds[category][name] = url
+                
+            elif action == "remove":
+                # Find and remove feed from any category
+                for cat_name, cat_feeds in feeds.items():
+                    if isinstance(cat_feeds, dict) and name in cat_feeds:
+                        del cat_feeds[name]
+                        # Remove empty categories
+                        if not cat_feeds and cat_name != "custom":
+                            del feeds[cat_name]
+                        break
+                        
+            # Save updated config
+            config['feeds'] = feeds
+            
+            # Ensure directory exists
+            self.config_path.parent.mkdir(parents=True, exist_ok=True)
+            
+            with open(self.config_path, 'w') as f:
+                json.dump(config, f, indent=2)
+                
+            logger.debug(f"Updated RSS config file: {action} feed '{name}'")
+            
+        except Exception as e:
+            logger.error(f"Failed to update RSS config file: {e}")
+            # Continue anyway - in-memory update was successful

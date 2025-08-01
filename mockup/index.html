@@ -16,8 +16,8 @@
             <div class="nav-menu">
                 <a href="#" class="nav-link active">Home</a>
                 <a href="#" class="nav-link">ArXiv</a>
-                <a href="#" class="nav-link">Hacker News</a>
-                <a href="#" class="nav-link">RSS Feeds</a>
+                <a href="#" class="nav-link disabled">Hacker News</a>
+                <a href="#" class="nav-link disabled">RSS Feeds</a>
             </div>
             <div class="nav-actions">
                 <button class="stats-btn">📊</button>
@@ -35,16 +35,16 @@
                 </p>
                 <div class="hero-stats">
                     <div class="stat-card">
-                        <span class="stat-number">2,847</span>
+                        <span class="stat-number">34</span>
                         <span class="stat-label">Total Articles</span>
                     </div>
                     <div class="stat-card">
-                        <span class="stat-number">89%</span>
+                        <span class="stat-number">87.9%</span>
                         <span class="stat-label">Avg Relevance</span>
                     </div>
                     <div class="stat-card">
-                        <span class="stat-number">24/7</span>
-                        <span class="stat-label">Auto Updates</span>
+                        <span class="stat-number">ArXiv</span>
+                        <span class="stat-label">Active Source</span>
                     </div>
                 </div>
             </div>
@@ -54,102 +54,11 @@
 
     <!-- Content Rows -->
     <main class="content">
-        <!-- Daily Digest Section -->
+        <!-- Daily Digest Section (Empty State) -->
         <section class="content-row">
             <h2 class="row-title">🎧 Daily AI Digests</h2>
-            <div class="cards-container">
-                <!-- Today's Digest -->
-                <div class="digest-card">
-                    <div class="digest-date">Today</div>
-                    <div class="digest-content">
-                        <h3>AI Breakthroughs & Ethics</h3>
-                        <p class="digest-meta">10 articles • 15 min audio</p>
-                        <div class="digest-themes">
-                            <span class="theme-tag">LLMs</span>
-                            <span class="theme-tag">Computer Vision</span>
-                            <span class="theme-tag">AI Ethics</span>
-                        </div>
-                        <div class="digest-summary">
-                            Today's digest covers major advances in large language model efficiency, breakthrough computer vision techniques for medical imaging, and important discussions on AI safety frameworks...
-                        </div>
-                        <div class="audio-controls-mini">
-                            <button class="play-btn-mini">▶️ Play</button>
-                            <div class="progress-bar-mini">
-                                <div class="progress-fill" style="width: 0%"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Yesterday's Digest -->
-                <div class="digest-card">
-                    <div class="digest-date">Yesterday</div>
-                    <div class="digest-content">
-                        <h3>Open Source AI Revolution</h3>
-                        <p class="digest-meta">8 articles • 12 min audio</p>
-                        <div class="digest-themes">
-                            <span class="theme-tag">Open Source</span>
-                            <span class="theme-tag">Model Training</span>
-                        </div>
-                        <div class="digest-summary">
-                            Yesterday's highlights include the release of several open-source alternatives to GPT-4, new efficient training methods that reduce costs by 60%, and community discussions on democratizing AI...
-                        </div>
-                        <div class="audio-controls-mini">
-                            <button class="play-btn-mini">▶️ Play</button>
-                            <div class="progress-bar-mini">
-                                <div class="progress-fill" style="width: 0%"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 2 Days Ago -->
-                <div class="digest-card">
-                    <div class="digest-date">Jan 28</div>
-                    <div class="digest-content">
-                        <h3>Multimodal AI Advances</h3>
-                        <p class="digest-meta">12 articles • 18 min audio</p>
-                        <div class="digest-themes">
-                            <span class="theme-tag">Multimodal</span>
-                            <span class="theme-tag">Vision-Language</span>
-                        </div>
-                        <div class="digest-summary">
-                            Major developments in multimodal AI systems that can process text, images, and audio simultaneously. New benchmarks show impressive performance gains...
-                        </div>
-                        <div class="audio-controls-mini">
-                            <button class="play-btn-mini">▶️ Play</button>
-                            <div class="progress-bar-mini">
-                                <div class="progress-fill" style="width: 0%"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 3 Days Ago -->
-                <div class="digest-card">
-                    <div class="digest-date">Jan 27</div>
-                    <div class="digest-content">
-                        <h3>AI in Scientific Discovery</h3>
-                        <p class="digest-meta">9 articles • 14 min audio</p>
-                        <div class="digest-themes">
-                            <span class="theme-tag">Science</span>
-                            <span class="theme-tag">Research</span>
-                        </div>
-                        <div class="digest-summary">
-                            AI systems are accelerating scientific discovery across multiple domains, from protein folding to climate modeling. Key breakthroughs in automated hypothesis generation...
-                        </div>
-                        <div class="audio-controls-mini">
-                            <button class="play-btn-mini">▶️ Play</button>
-                            <div class="progress-bar-mini">
-                                <div class="progress-fill" style="width: 0%"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="scroll-controls">
-                <button class="scroll-btn scroll-left">‹</button>
-                <button class="scroll-btn scroll-right">›</button>
+            <div class="empty-state">
+                <p class="empty-message">No digests generated yet. Daily digests will appear here once articles are processed.</p>
             </div>
         </section>
 
@@ -159,92 +68,92 @@
             <div class="cards-container">
                 <div class="card">
                     <div class="card-image">
-                        <div class="card-placeholder">AI</div>
+                        <div class="card-placeholder">ARXIV</div>
                     </div>
                     <div class="card-content">
-                        <h3>Attention Mechanisms in Vision Transformers: A Comprehensive Survey</h3>
+                        <h3>Linearly Convergent Algorithms for Nonsmooth Problems with Unknown Smooth Pieces</h3>
                         <p class="card-meta">ArXiv • Relevance: 95%</p>
                         <div class="card-categories">
-                            <span class="category-tag">Computer Vision</span>
-                            <span class="category-tag">Transformers</span>
+                            <span class="category-tag">Research</span>
                         </div>
-                        <p class="card-summary">This paper presents a comprehensive survey of attention mechanisms in vision transformers, analyzing recent advances and comparing performance across different architectures...</p>
+                        <p class="card-summary">Bundle-level method achieves linear convergence for piecewise smooth functions with first verifiable termination criterion...</p>
                         <div class="key-points">
-                            <p class="key-point">• Novel attention mechanism reduces computational complexity by 40%</p>
-                            <p class="key-point">• Achieves SOTA on ImageNet with 87.3% accuracy</p>
+                            <p class="key-point">• Bundle-level method achieves linear convergence for piecewise smooth functions</p>
+                            <p class="key-point">• First verifiable termination criterion for piecewise smooth optimization</p>
                         </div>
                     </div>
                     <div class="card-hover-preview">
-                        <p class="preview-text">This paper presents a comprehensive survey of attention mechanisms in vision transformers, analyzing recent advances and comparing performance across different architectures. The authors propose a novel taxonomy for categorizing attention mechanisms and provide empirical comparisons on standard benchmarks...</p>
+                        <p class="preview-text">This research introduces a groundbreaking bundle-level method that achieves linear convergence for piecewise smooth functions. The algorithm provides the first verifiable termination criterion for piecewise smooth optimization and improves complexity for weakly-convex piecewise smooth problems. Additionally, it handles approximately piecewise smooth functions effectively.</p>
                         <button class="preview-btn">Click to read full analysis →</button>
                     </div>
                 </div>
 
                 <div class="card">
                     <div class="card-image">
-                        <div class="card-placeholder">HN</div>
+                        <div class="card-placeholder">ARXIV</div>
                     </div>
                     <div class="card-content">
-                        <h3>Show HN: Open-source LLM fine-tuning framework</h3>
-                        <p class="card-meta">Hacker News • Relevance: 92%</p>
+                        <h3>Observations Meet Actions: Learning Control-Sufficient Representations</h3>
+                        <p class="card-meta">ArXiv • Relevance: 95%</p>
                         <div class="card-categories">
-                            <span class="category-tag">Open Source</span>
-                            <span class="category-tag">LLMs</span>
+                            <span class="category-tag">Research</span>
+                            <span class="category-tag">Technical Tutorial</span>
                         </div>
-                        <p class="card-summary">A new open-source framework for fine-tuning large language models with minimal compute resources, achieving comparable results to commercial solutions...</p>
+                        <p class="card-summary">Recasts context-based RL as a dual inference-control problem with observation and control sufficiency properties...</p>
                         <div class="key-points">
-                            <p class="key-point">• Reduces memory usage by 70% using novel quantization</p>
-                            <p class="key-point">• Compatible with all major LLM architectures</p>
+                            <p class="key-point">• Introduces observation sufficiency and control sufficiency properties</p>
+                            <p class="key-point">• Proposes Bottlenecked Contextual Policy Optimization (BCPO) algorithm</p>
                         </div>
                     </div>
                     <div class="card-hover-preview">
-                        <p class="preview-text">A new open-source framework for fine-tuning large language models with minimal compute resources, achieving comparable results to commercial solutions. The framework introduces novel quantization techniques that maintain model quality while drastically reducing memory requirements...</p>
+                        <p class="preview-text">This paper recasts context-based RL as a dual inference-control problem, introducing observation sufficiency and control sufficiency properties. It derives a contextual evidence lower bound (ELBO)-style objective and proposes the Bottlenecked Contextual Policy Optimization (BCPO) algorithm, demonstrating improved performance and sample efficiency on continuous-control benchmarks.</p>
                         <button class="preview-btn">Click to read full analysis →</button>
                     </div>
                 </div>
 
                 <div class="card">
                     <div class="card-image">
-                        <div class="card-placeholder">RSS</div>
+                        <div class="card-placeholder">ARXIV</div>
                     </div>
                     <div class="card-content">
-                        <h3>Google Announces Gemini 2.0 with Enhanced Reasoning</h3>
-                        <p class="card-meta">TechCrunch • Relevance: 91%</p>
+                        <h3>Step-3 is Large yet Affordable: Model-system Co-design</h3>
+                        <p class="card-meta">ArXiv • Relevance: 95%</p>
                         <div class="card-categories">
-                            <span class="category-tag">Large Language Models</span>
-                            <span class="category-tag">Google AI</span>
+                            <span class="category-tag">Research</span>
+                            <span class="category-tag">Hardware/Infrastructure</span>
+                            <span class="category-tag">Technical Tutorial</span>
                         </div>
-                        <p class="card-summary">Google unveils Gemini 2.0 with significant improvements in mathematical reasoning and code generation, benchmarking ahead of GPT-4 in several key areas...</p>
+                        <p class="card-summary">Multi-Matrix Factorization Attention (MFA) mechanism with Attention-FFN Disaggregation for efficient decoding...</p>
                         <div class="key-points">
-                            <p class="key-point">• 2x improvement in mathematical reasoning tasks</p>
-                            <p class="key-point">• Native multimodal understanding across 100+ languages</p>
+                            <p class="key-point">• Multi-Matrix Factorization Attention (MFA) mechanism</p>
+                            <p class="key-point">• Achieves 4,039 tokens per second per GPU decoding throughput</p>
                         </div>
                     </div>
                     <div class="card-hover-preview">
-                        <p class="preview-text">Google unveils Gemini 2.0 with significant improvements in mathematical reasoning and code generation, benchmarking ahead of GPT-4 in several key areas. The model demonstrates enhanced capabilities in multi-step reasoning tasks and shows remarkable performance on competitive programming challenges...</p>
+                        <p class="preview-text">This paper introduces Multi-Matrix Factorization Attention (MFA) mechanism and Attention-FFN Disaggregation (AFD) for cost-effective decoding. The system achieves an impressive 4,039 tokens per second per GPU decoding throughput, making large models more affordable to deploy at scale.</p>
                         <button class="preview-btn">Click to read full analysis →</button>
                     </div>
                 </div>
 
                 <div class="card">
                     <div class="card-image">
-                        <div class="card-placeholder">AI</div>
+                        <div class="card-placeholder">ARXIV</div>
                     </div>
                     <div class="card-content">
-                        <h3>Federated Learning for Privacy-Preserving AI</h3>
-                        <p class="card-meta">ArXiv • Relevance: 90%</p>
+                        <h3>Learning neuro-symbolic convergent term rewriting systems</h3>
+                        <p class="card-meta">ArXiv • Relevance: 95%</p>
                         <div class="card-categories">
-                            <span class="category-tag">Privacy</span>
-                            <span class="category-tag">Distributed ML</span>
+                            <span class="category-tag">Research</span>
+                            <span class="category-tag">Technical Tutorial</span>
                         </div>
-                        <p class="card-summary">Novel federated learning approach enables training on sensitive data without compromising privacy, showing promising results in healthcare applications...</p>
+                        <p class="card-summary">Introduces a neuro-symbolic framework for learning convergent term rewriting systems with strong generalization...</p>
                         <div class="key-points">
-                            <p class="key-point">• Maintains 98% accuracy while preserving data privacy</p>
-                            <p class="key-point">• Reduces communication overhead by 60%</p>
+                            <p class="key-point">• Presents NRS and FastNRS implementations with improved efficiency</p>
+                            <p class="key-point">• Outperforms existing neural and LLMs on formula simplification</p>
                         </div>
                     </div>
                     <div class="card-hover-preview">
-                        <p class="preview-text">Novel federated learning approach enables training on sensitive data without compromising privacy, showing promising results in healthcare applications. The method uses differential privacy techniques combined with secure aggregation protocols to ensure patient data remains confidential...</p>
+                        <p class="preview-text">This paper introduces a neuro-symbolic framework for learning convergent term rewriting systems. It presents two modular implementations: NRS and FastNRS, with FastNRS offering improved efficiency. The approach demonstrates strong generalization to out-of-distribution instances and shows versatility through multi-domain learning.</p>
                         <button class="preview-btn">Click to read full analysis →</button>
                     </div>
                 </div>
@@ -256,13 +165,13 @@
             </div>
         </section>
 
-        <!-- Recent Articles (Last 24 hours) -->
+        <!-- All ArXiv Articles -->
         <section class="content-row">
-            <h2 class="row-title">🕐 Recent Articles (Last 24 hours)</h2>
+            <h2 class="row-title">📄 All ArXiv Papers (34 total)</h2>
             <div class="cards-container">
                 <div class="card">
                     <div class="card-image">
-                        <div class="card-placeholder">AI</div>
+                        <div class="card-placeholder">ARXIV</div>
                     </div>
                     <div class="card-content">
                         <h3>Efficient Training of Large Language Models</h3>
@@ -285,7 +194,7 @@
 
                 <div class="card">
                     <div class="card-image">
-                        <div class="card-placeholder">ML</div>
+                        <div class="card-placeholder">ARXIV</div>
                     </div>
                     <div class="card-content">
                         <h3>Real-time Object Detection on Mobile Devices</h3>
@@ -308,7 +217,7 @@
 
                 <div class="card">
                     <div class="card-image">
-                        <div class="card-placeholder">HN</div>
+                        <div class="card-placeholder">ARXIV</div>
                     </div>
                     <div class="card-content">
                         <h3>Ask HN: Best practices for RAG systems in production?</h3>
@@ -335,61 +244,6 @@
             </div>
         </section>
 
-        <!-- Articles by Source -->
-        <section class="content-row">
-            <h2 class="row-title">📄 Latest from ArXiv</h2>
-            <div class="cards-container">
-                <div class="card">
-                    <div class="card-image">
-                        <div class="card-placeholder">ARXIV</div>
-                    </div>
-                    <div class="card-content">
-                        <h3>Scaling Laws for Neural Language Models Revisited</h3>
-                        <p class="card-meta">ArXiv • Relevance: 87% • cs.LG</p>
-                        <div class="card-categories">
-                            <span class="category-tag">Scaling Laws</span>
-                            <span class="category-tag">LLMs</span>
-                            <span class="category-tag">Theory</span>
-                        </div>
-                        <p class="card-summary">Empirical study challenges existing scaling laws, proposing new formulations that better predict model performance...</p>
-                        <div class="key-points">
-                            <p class="key-point">• New scaling law accounts for data quality</p>
-                        </div>
-                    </div>
-                    <div class="card-hover-preview">
-                        <p class="preview-text">Empirical study challenges existing scaling laws, proposing new formulations that better predict model performance. The research reveals that data quality has a more significant impact on model capabilities than previously thought, suggesting new directions for efficient training...</p>
-                        <button class="preview-btn">Click to read full analysis →</button>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <div class="card-image">
-                        <div class="card-placeholder">ARXIV</div>
-                    </div>
-                    <div class="card-content">
-                        <h3>Self-Supervised Learning for Time Series Analysis</h3>
-                        <p class="card-meta">ArXiv • Relevance: 84% • cs.AI</p>
-                        <div class="card-categories">
-                            <span class="category-tag">Self-Supervised</span>
-                            <span class="category-tag">Time Series</span>
-                        </div>
-                        <p class="card-summary">Novel self-supervised approach for time series forecasting outperforms supervised baselines on multiple benchmarks...</p>
-                        <div class="key-points">
-                            <p class="key-point">• 20% improvement on financial time series</p>
-                        </div>
-                    </div>
-                    <div class="card-hover-preview">
-                        <p class="preview-text">Novel self-supervised approach for time series forecasting outperforms supervised baselines on multiple benchmarks. The method learns temporal patterns without labeled data, making it particularly valuable for domains where annotations are expensive or unavailable...</p>
-                        <button class="preview-btn">Click to read full analysis →</button>
-                    </div>
-                </div>
-
-            </div>
-            <div class="scroll-controls">
-                <button class="scroll-btn scroll-left">‹</button>
-                <button class="scroll-btn scroll-right">›</button>
-            </div>
-        </section>
     </main>
 
     <!-- Modal for Article Details -->
