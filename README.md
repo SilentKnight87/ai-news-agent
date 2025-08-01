@@ -28,7 +28,7 @@ src/
 │   ├── base.py       # Abstract base fetcher with retry logic
 │   ├── arxiv_fetcher.py      # ArXiv API integration
 │   ├── hackernews_fetcher.py # HackerNews API integration
-│   ├── rss_fetcher.py        # RSS feed parsing
+│   ├── rss_fetcher.py        # RSS feed parsing (configurable)
 │   └── factory.py    # Fetcher factory pattern
 ├── services/         # Core business logic services
 │   ├── embeddings.py # HuggingFace embeddings generation
@@ -46,6 +46,9 @@ src/
 │   └── dependencies.py # Dependency injection
 ├── config.py         # Configuration management
 └── main.py          # FastAPI application entry point
+
+config/
+└── rss_feeds.json   # Configurable RSS feed sources
 ```
 
 ## 🛠️ Installation
@@ -157,6 +160,45 @@ All API endpoints are prefixed with `/api/v1`:
 - `GET /api/v1/digest/latest` - Get latest daily digest summary
 
 **Interactive API Documentation**: Visit http://localhost:8000/docs when running locally
+
+## 📋 RSS Feed Configuration
+
+The RSS fetcher supports dynamic configuration of feed sources through `config/rss_feeds.json`:
+
+```json
+{
+  "feeds": {
+    "company_blogs": {
+      "OpenAI Blog": "https://openai.com/index/rss.xml",
+      "Anthropic Blog": "https://www.anthropic.com/index.xml"
+    },
+    "tech_news": {
+      "TechCrunch AI": "https://techcrunch.com/category/artificial-intelligence/feed/"
+    }
+  }
+}
+```
+
+### Managing RSS Feeds
+
+RSS feeds can be managed programmatically:
+
+```python
+from src.fetchers.rss_fetcher import RSSFetcher
+
+fetcher = RSSFetcher()
+
+# Add a new feed
+fetcher.add_feed("New AI Blog", "https://example.com/ai/feed.xml", category="company_blogs")
+
+# Remove a feed
+fetcher.remove_feed("Old Feed Name")
+
+# Get current feeds
+current_feeds = fetcher.get_feed_urls()
+```
+
+Changes are automatically persisted to the configuration file.
 
 ## 🔄 Data Processing Pipeline
 

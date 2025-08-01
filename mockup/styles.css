@@ -768,6 +768,35 @@ a:focus {
   outline-offset: 4px;
 }
 
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 3rem 2rem;
+  background-color: var(--dark-gray);
+  border-radius: 8px;
+  margin: 1rem 2rem;
+}
+
+.empty-message {
+  color: var(--lighter-gray);
+  font-size: 1rem;
+}
+
+/* Disabled Navigation Links */
+.nav-link.disabled {
+  color: var(--light-gray);
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.nav-link.disabled:hover {
+  color: var(--light-gray);
+}
+
+.nav-link.disabled::after {
+  display: none;
+}
+
 /* Stats Modal Styles */
 .stats-container {
   padding: 1rem;

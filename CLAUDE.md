@@ -1,6 +1,6 @@
 ### 🔄 Project Awareness & Context
 - **Always read `PLANNING.md`** at the start of a new conversation to understand the project's architecture, goals, style, and constraints.
-- **Check `TASK.md`** before starting a new task. If the task isn’t listed, add it with a brief description and today's date.
+- **Check `TASK.md`** before starting a new task. If the task isn't listed, add it with a brief description and today's date.
 - **Use consistent naming conventions, file structure, and architecture patterns** as described in `PLANNING.md`.
 - **Use venv_linux** (the virtual environment) whenever executing Python commands, including for unit tests.
 
@@ -11,7 +11,6 @@
     - `agent.py` - Main agent definition and execution logic 
     - `tools.py` - Tool functions used by the agent 
     - `prompts.py` - System prompts
-- **Use clear, consistent imports** (prefer relative imports within packages).
 - **Use clear, consistent imports** (prefer relative imports within packages).
 - **Use python_dotenv and load_env()** for environment variables.
 
@@ -26,7 +25,7 @@
 
 ### ✅ Task Completion
 - **Mark completed tasks in `TASK.md`** immediately after finishing them.
-- Add new sub-tasks or TODOs discovered during development to `TASK.md` under a “Discovered During Work” section.
+- Add new sub-tasks or TODOs discovered during development to `TASK.md` under a "Discovered During Work" section.
 
 ### 📎 Style & Conventions
 - **Use Python** as the primary language.
