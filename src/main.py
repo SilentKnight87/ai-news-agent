@@ -72,12 +72,29 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     except Exception as e:
         logger.error(f"Failed to initialize AI services: {e}")
 
+    # Start automated task scheduler
+    try:
+        from .services.scheduler import start_scheduler
+        await start_scheduler()
+        logger.info("Automated task scheduler started")
+    except Exception as e:
+        logger.error(f"Failed to start task scheduler: {e}")
+        logger.warning("Application continuing without automated scheduling")
+
     logger.info("Application startup complete")
 
     yield
 
     # Shutdown
     logger.info("Shutting down AI News Aggregator API")
+    
+    # Stop the task scheduler
+    try:
+        from .services.scheduler import stop_scheduler
+        await stop_scheduler()
+        logger.info("Task scheduler stopped")
+    except Exception as e:
+        logger.error(f"Error stopping task scheduler: {e}")
 
 
 def create_app() -> FastAPI:

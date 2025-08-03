@@ -416,4 +416,118 @@ async def fetch_articles_background(
         logger.error(f"Background fetch failed: {e}")
 
 
+@router.get("/scheduler/status")
+async def get_scheduler_status():
+    """
+    Get current scheduler status and task information.
+    
+    Returns:
+        Dict: Scheduler status with task details.
+    """
+    from ..services.scheduler import get_scheduler
+    
+    scheduler = get_scheduler()
+    return scheduler.get_status()
+
+
+@router.post("/scheduler/task/{task_name}/run")
+async def run_scheduler_task(task_name: str):
+    """
+    Manually trigger a scheduled task to run immediately.
+    
+    Args:
+        task_name: Name of the task to run.
+        
+    Returns:
+        Dict: Task execution result.
+    """
+    from ..services.scheduler import get_scheduler
+    
+    scheduler = get_scheduler()
+    success = await scheduler.run_task_now(task_name)
+    
+    if not success:
+        raise HTTPException(status_code=404, detail=f"Task '{task_name}' not found or execution failed")
+    
+    return {
+        "message": f"Task '{task_name}' executed successfully",
+        "timestamp": datetime.utcnow().isoformat()
+    }
+
+
+@router.get("/monitoring/performance")
+async def get_performance_metrics(
+    article_repo: Annotated[ArticleRepository, Depends(get_article_repository)]
+):
+    """
+    Get comprehensive performance and monitoring metrics.
+    
+    Returns:
+        Dict: Performance metrics for monitoring.
+    """
+    try:
+        # Get article statistics
+        stats = await article_repo.get_article_stats()
+        
+        # Get scheduler status  
+        from ..services.scheduler import get_scheduler
+        scheduler = get_scheduler()
+        scheduler_status = scheduler.get_status()
+        
+        # Get fetcher health status
+        fetcher_health = fetcher_factory.get_health_status()
+        
+        # Calculate performance metrics
+        total_articles = stats.get("total_articles", 0)
+        recent_24h = stats.get("recent_24h", 0)
+        duplicates = stats.get("duplicates", 0)
+        
+        # Calculate rates
+        duplicate_rate = (duplicates / total_articles * 100) if total_articles > 0 else 0
+        daily_collection_rate = recent_24h  # Articles per day
+        
+        return {
+            "timestamp": datetime.utcnow().isoformat(),
+            "database": {
+                "connection_healthy": "error" not in stats,
+                "total_articles": total_articles,
+                "recent_24h_articles": recent_24h,
+                "duplicate_rate_percent": round(duplicate_rate, 2),
+                "daily_collection_rate": daily_collection_rate
+            },
+            "scheduler": {
+                "is_running": scheduler_status.get("is_running", False),
+                "total_tasks": scheduler_status.get("total_tasks", 0),
+                "next_task_run": scheduler_status.get("next_task_run"),
+                "task_health": [
+                    {
+                        "name": task["name"],
+                        "success_rate": task["success_rate"],
+                        "error_count": task["error_count"],
+                        "last_run": task["last_run"]
+                    }
+                    for task in scheduler_status.get("tasks", [])
+                ]
+            },
+            "fetchers": {
+                "total_sources": len(fetcher_health.get("supported_sources", [])),
+                "active_sources": len(fetcher_health.get("active_instances", [])),
+                "sources_status": fetcher_health.get("fetcher_status", {}),
+                "circuit_breakers_open": [
+                    source for source, status in fetcher_health.get("fetcher_status", {}).items()
+                    if status.get("circuit_breaker_open", False)
+                ]
+            },
+            "performance": {
+                "collection_efficiency": round((total_articles - duplicates) / total_articles * 100, 2) if total_articles > 0 else 100,
+                "avg_articles_per_source": round(total_articles / len(fetcher_health.get("supported_sources", [1])), 2),
+                "data_freshness_hours": 24 if recent_24h > 0 else None
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to get performance metrics: {e}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve performance metrics")
+
+
 # Note: Exception handlers are configured in main.py
