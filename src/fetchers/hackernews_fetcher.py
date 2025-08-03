@@ -24,7 +24,7 @@ class HackerNewsFetcher(BaseFetcher):
     them for AI/ML relevance based on title and content keywords.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize HackerNews fetcher with rate limiting."""
         # Respect unofficial 1 req/sec limit
         super().__init__(source=ArticleSource.HACKERNEWS, rate_limit_delay=1.0)
@@ -254,7 +254,12 @@ class HackerNewsFetcher(BaseFetcher):
             url=url,
             author=author if author else None,
             published_at=published_at,
-            fetched_at=datetime.utcnow()
+            fetched_at=datetime.utcnow(),
+            summary=None,
+            relevance_score=None,
+            embedding=None,
+            is_duplicate=False,
+            duplicate_of=None
         )
 
     async def fetch_recent(self, hours: int = 24) -> list[Article]:

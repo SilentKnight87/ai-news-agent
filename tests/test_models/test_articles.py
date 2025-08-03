@@ -2,12 +2,12 @@
 Unit tests for article models.
 """
 
-import pytest
-from datetime import datetime
-from uuid import uuid4
-
-import sys
 import os
+import sys
+from datetime import datetime
+
+import pytest
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
 from src.models.articles import Article, ArticleSource, DailyDigest
@@ -30,7 +30,7 @@ class TestArticle:
             is_duplicate=False,
             duplicate_of=None
         )
-        
+
         assert article.title == "Test Article"
         assert article.url == "https://example.com/article"
         assert article.source == ArticleSource.RSS
@@ -43,7 +43,7 @@ class TestArticle:
         valid_embedding = [0.1] * 384
         article = Article(
             title="Test Article",
-            url="https://example.com/article", 
+            url="https://example.com/article",
             content="Test content",
             source=ArticleSource.ARXIV,
             source_id="arxiv-123",
@@ -59,12 +59,12 @@ class TestArticle:
         """Test that invalid embedding dimension raises error."""
         # Invalid embedding (wrong dimension)
         invalid_embedding = [0.1] * 100
-        
+
         with pytest.raises(ValueError, match="Embedding must have exactly 384 dimensions"):
             Article(
                 title="Test Article",
                 url="https://example.com/article",
-                content="Test content", 
+                content="Test content",
                 source=ArticleSource.ARXIV,
                 source_id="arxiv-invalid",
                 published_at=datetime.utcnow(),
@@ -88,7 +88,7 @@ class TestDailyDigest:
             top_articles=[],
             audio_url="https://example.com/audio.mp3"
         )
-        
+
         assert digest.digest_date == digest_date
         assert digest.summary_text == "Test summary"
         assert digest.total_articles_processed == 5

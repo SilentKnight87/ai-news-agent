@@ -9,6 +9,7 @@ import asyncio
 import logging
 from abc import ABC, abstractmethod
 from datetime import datetime, timedelta
+from typing import Any
 
 from ..models.articles import Article, ArticleSource, FetchResult
 
@@ -129,7 +130,7 @@ class BaseFetcher(ABC):
 
         return True
 
-    def get_health_status(self) -> dict[str, any]:
+    def get_health_status(self) -> dict[str, Any]:
         """
         Get health status information for this fetcher.
 
@@ -183,7 +184,7 @@ class RateLimitedHTTPClient:
         self.max_retries = max_retries
         self._last_request_time: datetime | None = None
 
-    async def get(self, url: str, **kwargs) -> any:
+    async def get(self, url: str, **kwargs) -> Any:
         """
         Make a rate-limited GET request with retries.
 

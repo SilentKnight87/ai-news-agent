@@ -26,7 +26,7 @@ class ArxivFetcher(BaseFetcher):
     to avoid being banned.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize ArXiv fetcher with proper rate limiting."""
         # CRITICAL: Use 3.0 second delay as required by ArXiv
         super().__init__(source=ArticleSource.ARXIV, rate_limit_delay=3.0)
@@ -128,7 +128,12 @@ class ArxivFetcher(BaseFetcher):
             url=url,
             author=author_str if author_str else None,
             published_at=result.published,
-            fetched_at=datetime.utcnow()
+            fetched_at=datetime.utcnow(),
+            summary=None,
+            relevance_score=None,
+            embedding=None,
+            is_duplicate=False,
+            duplicate_of=None
         )
 
     async def fetch_recent(self, hours: int = 24) -> list[Article]:

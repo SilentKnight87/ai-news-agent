@@ -164,6 +164,7 @@ Content: {content}
         try:
             # Ensure environment variable is set
             import os
+
             from ..config import get_settings
             settings = get_settings()
             os.environ['GOOGLE_API_KEY'] = settings.gemini_api_key

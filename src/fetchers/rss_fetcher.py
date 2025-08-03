@@ -8,8 +8,9 @@ error handling and date parsing for different feed formats.
 import asyncio
 import json
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from typing import Any
 
 import feedparser
 import httpx
@@ -41,12 +42,10 @@ class RSSFetcher(BaseFetcher):
         if config_path is None:
             # Get project root directory (where main.py is located)
             project_root = Path(__file__).parent.parent.parent
-            config_path = project_root / "config" / "rss_feeds.json"
+            self.config_path = project_root / "config" / "rss_feeds.json"
         else:
-            config_path = Path(config_path)
-            
-        self.config_path = config_path
-        self.feed_urls = {}
+            self.config_path = Path(config_path)
+        self.feed_urls: dict[str, str] = {}
         self.timeout = 10.0  # 10 second timeout per feed
 
         # Load feeds from configuration
@@ -71,7 +70,7 @@ class RSSFetcher(BaseFetcher):
             logger.info(f"Fetching from {len(self.feed_urls)} RSS feeds")
 
             # Fetch all feeds concurrently
-            all_articles = []
+            all_articles: list[Article] = []
             successful_feeds = 0
             failed_feeds = []
 
@@ -223,20 +222,34 @@ class RSSFetcher(BaseFetcher):
         published_at = self._parse_entry_date(entry)
         if not published_at:
             # Use current time if no date available
-            published_at = datetime.now(timezone.utc)
+            published_at = datetime.now(UTC)
 
         # Create unique source ID
         source_id = self._generate_source_id(entry, url)
 
+        # Determine if this is a YouTube video and extract metadata
+        is_youtube = self._is_youtube_feed(feed_url, url)
+        article_source = ArticleSource.YOUTUBE if is_youtube else ArticleSource.RSS
+        metadata = {}
+
+        if is_youtube:
+            metadata = self._extract_youtube_metadata(entry, feed_name)
+
         return Article(
             source_id=source_id,
-            source=ArticleSource.RSS,
+            source=article_source,
             title=title,
             content=content,
             url=url,
             author=author,
             published_at=published_at,
-            fetched_at=datetime.now(timezone.utc)
+            fetched_at=datetime.now(UTC),
+            metadata=metadata,
+            summary=None,
+            relevance_score=None,
+            embedding=None,
+            is_duplicate=False,
+            duplicate_of=None
         )
 
     def _parse_entry_date(self, entry: feedparser.FeedParserDict) -> datetime | None:
@@ -310,7 +323,7 @@ class RSSFetcher(BaseFetcher):
         Returns:
             List[Article]: Recent articles.
         """
-        cutoff_date = datetime.now(timezone.utc) - timedelta(hours=hours)
+        cutoff_date = datetime.now(UTC) - timedelta(hours=hours)
 
         # Fetch all articles and filter by date
         articles = await self.fetch(max_articles=500)  # Fetch more to account for filtering
@@ -341,23 +354,23 @@ class RSSFetcher(BaseFetcher):
         if not self.config_path.exists():
             logger.warning(f"RSS config file not found at {self.config_path}, creating default")
             self._create_default_config()
-            
+
         try:
-            with open(self.config_path, 'r') as f:
+            with open(self.config_path) as f:
                 config = json.load(f)
-                
+
             # Flatten nested feed structure into single dict
             self.feed_urls = {}
             feeds = config.get('feeds', {})
-            
+
             for category, category_feeds in feeds.items():
                 if isinstance(category_feeds, dict):
                     self.feed_urls.update(category_feeds)
                 else:
                     logger.warning(f"Invalid feed category format: {category}")
-                    
+
             logger.info(f"Loaded {len(self.feed_urls)} RSS feeds from {self.config_path}")
-            
+
         except json.JSONDecodeError as e:
             logger.error(f"Failed to parse RSS config file: {e}")
             logger.info("Using empty feed list")
@@ -366,7 +379,7 @@ class RSSFetcher(BaseFetcher):
             logger.error(f"Failed to load RSS config: {e}")
             logger.info("Using empty feed list")
             self.feed_urls = {}
-            
+
     def _create_default_config(self) -> None:
         """Create default RSS feeds configuration file."""
         default_config = {
@@ -392,10 +405,10 @@ class RSSFetcher(BaseFetcher):
                 }
             }
         }
-        
+
         # Ensure config directory exists
         self.config_path.parent.mkdir(parents=True, exist_ok=True)
-        
+
         try:
             with open(self.config_path, 'w') as f:
                 json.dump(default_config, f, indent=2)
@@ -415,13 +428,13 @@ class RSSFetcher(BaseFetcher):
         # Validate URL format
         if not self._validate_feed_url(url):
             raise ValueError(f"Invalid RSS feed URL: {url}")
-            
+
         # Add to in-memory feed list
         self.feed_urls[name] = url
-        
+
         # Update configuration file
         self._update_config_file(name, url, category, action="add")
-        
+
         logger.info(f"Added RSS feed: {name} ({url}) to category '{category}'")
 
     def remove_feed(self, name: str) -> bool:
@@ -437,14 +450,14 @@ class RSSFetcher(BaseFetcher):
         if name in self.feed_urls:
             # Remove from in-memory list
             del self.feed_urls[name]
-            
+
             # Update configuration file
             self._update_config_file(name, None, None, action="remove")
-            
+
             logger.info(f"Removed RSS feed: {name}")
             return True
         return False
-    
+
     def _validate_feed_url(self, url: str) -> bool:
         """
         Validate that the URL looks like a valid RSS feed URL.
@@ -457,22 +470,22 @@ class RSSFetcher(BaseFetcher):
         """
         if not url or not isinstance(url, str):
             return False
-            
+
         # Check basic URL format
         if not (url.startswith("http://") or url.startswith("https://")):
             return False
-            
+
         # Check for common RSS indicators
         rss_indicators = [".xml", ".rss", "/feed", "/rss", "feed/", "rss/"]
         url_lower = url.lower()
-        
+
         # Allow any URL but warn if it doesn't look like RSS
         has_rss_indicator = any(indicator in url_lower for indicator in rss_indicators)
         if not has_rss_indicator:
             logger.warning(f"URL '{url}' doesn't contain common RSS indicators, but allowing it")
-            
+
         return True
-    
+
     def _update_config_file(self, name: str, url: str | None, category: str | None, action: str) -> None:
         """
         Update the configuration file with feed changes.
@@ -487,19 +500,19 @@ class RSSFetcher(BaseFetcher):
             # Load current config
             config = {}
             if self.config_path.exists():
-                with open(self.config_path, 'r') as f:
+                with open(self.config_path) as f:
                     config = json.load(f)
-                    
+
             feeds = config.get('feeds', {})
-            
+
             if action == "add":
                 # Ensure category exists
                 if category not in feeds:
                     feeds[category] = {}
-                    
+
                 # Add feed to category
                 feeds[category][name] = url
-                
+
             elif action == "remove":
                 # Find and remove feed from any category
                 for cat_name, cat_feeds in feeds.items():
@@ -509,18 +522,78 @@ class RSSFetcher(BaseFetcher):
                         if not cat_feeds and cat_name != "custom":
                             del feeds[cat_name]
                         break
-                        
+
             # Save updated config
             config['feeds'] = feeds
-            
+
             # Ensure directory exists
             self.config_path.parent.mkdir(parents=True, exist_ok=True)
-            
+
             with open(self.config_path, 'w') as f:
                 json.dump(config, f, indent=2)
-                
+
             logger.debug(f"Updated RSS config file: {action} feed '{name}'")
-            
+
         except Exception as e:
             logger.error(f"Failed to update RSS config file: {e}")
             # Continue anyway - in-memory update was successful
+
+    def _is_youtube_feed(self, feed_url: str, article_url: str) -> bool:
+        """
+        Determine if this is a YouTube RSS feed.
+        
+        Args:
+            feed_url: URL of the RSS feed.
+            article_url: URL of the article.
+            
+        Returns:
+            bool: True if this is a YouTube feed.
+        """
+        return ('youtube.com/feeds/videos.xml' in feed_url or
+                'youtube.com/watch' in article_url or
+                'youtu.be/' in article_url)
+
+    def _extract_youtube_metadata(
+        self,
+        entry: feedparser.FeedParserDict,
+        channel_name: str
+    ) -> dict[str, Any]:
+        """
+        Extract YouTube-specific metadata from RSS entry.
+        
+        Args:
+            entry: RSS feed entry.
+            channel_name: Name of the YouTube channel.
+            
+        Returns:
+            dict: YouTube-specific metadata.
+        """
+        metadata = {
+            "channel": channel_name,
+            "platform": "youtube"
+        }
+
+        # Extract video ID from URL
+        url = entry.get('link', '')
+        if 'youtube.com/watch?v=' in url:
+            video_id = url.split('v=')[1].split('&')[0]
+            metadata["video_id"] = video_id
+        elif 'youtu.be/' in url:
+            video_id = url.split('youtu.be/')[1].split('?')[0]
+            metadata["video_id"] = video_id
+
+        # Extract duration from media:group/yt:duration if available
+        if hasattr(entry, 'yt_duration'):
+            metadata["duration"] = entry.yt_duration
+
+        # Extract view count if available in media:group/media:community
+        if hasattr(entry, 'media_statistics'):
+            metadata["views"] = getattr(entry.media_statistics, 'views', None)
+
+        # Extract thumbnail URL
+        if hasattr(entry, 'media_thumbnail'):
+            thumbnails = entry.media_thumbnail if isinstance(entry.media_thumbnail, list) else [entry.media_thumbnail]
+            if thumbnails:
+                metadata["thumbnail_url"] = thumbnails[0].get('url', '')
+
+        return metadata

@@ -26,6 +26,15 @@ class Settings(BaseSettings):
     elevenlabs_api_key: str | None = Field(None, description="ElevenLabs API key for TTS")
     hf_api_key: str | None = Field(None, description="HuggingFace API key")
 
+    # Reddit API credentials
+    reddit_client_id: str | None = Field(None, description="Reddit OAuth client ID")
+    reddit_client_secret: str | None = Field(None, description="Reddit OAuth client secret")
+    reddit_user_agent: str = Field("AI-News-Aggregator/1.0", description="Reddit API user agent")
+    reddit_username: str | None = Field(None, description="Reddit username for user agent")
+
+    # GitHub API credentials
+    github_token: str | None = Field(None, description="GitHub personal access token")
+
     # Application configuration
     fetch_interval_minutes: int = Field(30, description="Minutes between fetching cycles")
     digest_hour_utc: int = Field(17, ge=0, le=23, description="Hour (UTC) to generate daily digest")
@@ -51,7 +60,7 @@ class Settings(BaseSettings):
 
     model_config = {
         "env_file": ".env",
-        "env_file_encoding": "utf-8", 
+        "env_file_encoding": "utf-8",
         "case_sensitive": False,
     }
 

@@ -7,7 +7,6 @@ from multiple articles, identifying key themes and notable developments.
 
 import logging
 from datetime import datetime
-from typing import List
 
 from pydantic_ai import Agent
 
@@ -26,27 +25,27 @@ class DigestAgent:
     Uses Google Gemini to analyze multiple articles and create
     coherent daily summaries with key themes and developments.
     """
-    
+
     def __init__(self):
         """Initialize the digest agent."""
         import os
         self.settings = get_settings()
-        
+
         # Set GOOGLE_API_KEY environment variable for PydanticAI
         os.environ['GOOGLE_API_KEY'] = self.settings.gemini_api_key
-        
+
         # Initialize PydanticAI agent with Gemini
         self.agent = Agent(
             model='gemini-1.5-flash',
             output_type=DigestSummary,
             system_prompt=DIGEST_GENERATION_PROMPT,
         )
-        
+
         logger.info("Digest agent initialized with Gemini")
-    
+
     async def generate_digest(
         self,
-        articles: List[Article],
+        articles: list[Article],
         digest_date: datetime,
         max_summary_length: int = 2000
     ) -> DailyDigest:
@@ -67,16 +66,16 @@ class DigestAgent:
         try:
             if not articles:
                 raise ValueError("Cannot generate digest from empty article list")
-            
+
             logger.info(f"Generating digest from {len(articles)} articles for {digest_date.date()}")
-            
+
             # Prepare input for the agent
             input_text = self._prepare_digest_input(articles, max_summary_length)
-            
+
             # Generate digest summary using AI
             result = await self.agent.run(input_text)
             digest_summary = result.data
-            
+
             # Create DailyDigest object
             digest = DailyDigest(
                 digest_date=digest_date,
@@ -86,17 +85,17 @@ class DigestAgent:
                 key_themes=digest_summary.key_themes,
                 notable_developments=digest_summary.notable_developments
             )
-            
+
             logger.info(f"Generated digest with {len(digest.key_themes)} themes")
             return digest
-            
+
         except Exception as e:
             logger.error(f"Failed to generate digest: {e}")
             raise
-    
+
     def _prepare_digest_input(
         self,
-        articles: List[Article],
+        articles: list[Article],
         max_length: int
     ) -> str:
         """
@@ -115,7 +114,7 @@ class DigestAgent:
             key=lambda a: a.relevance_score or 0,
             reverse=True
         )
-        
+
         # Create article summaries for the agent
         article_summaries = []
         for i, article in enumerate(sorted_articles[:20], 1):  # Limit to top 20
@@ -130,7 +129,7 @@ Summary: {article.summary or 'No summary available'}
 Key Points: {'; '.join(article.key_points or [])}
 """
             article_summaries.append(summary.strip())
-        
+
         input_text = f"""
 Please generate a daily digest for {len(articles)} AI/ML articles.
 
@@ -148,14 +147,14 @@ Please create a coherent daily summary that:
 3. Provides context about trends and implications
 4. Maintains the specified character limit
 """
-        
+
         return input_text
-    
+
     def _select_top_articles(
         self,
-        articles: List[Article],
+        articles: list[Article],
         max_count: int = 10
-    ) -> List[Article]:
+    ) -> list[Article]:
         """
         Select top articles for inclusion in digest.
         
@@ -172,12 +171,12 @@ Please create a coherent daily summary that:
             key=lambda a: (a.relevance_score or 0, a.published_at),
             reverse=True
         )
-        
+
         return sorted_articles[:max_count]
-    
+
     async def generate_quick_summary(
         self,
-        articles: List[Article],
+        articles: list[Article],
         max_length: int = 500
     ) -> str:
         """
@@ -193,7 +192,7 @@ Please create a coherent daily summary that:
         try:
             if not articles:
                 return "No articles available for summary."
-            
+
             # Use a simpler agent for quick summaries
             quick_agent = Agent(
                 model='gemini-1.5-flash',
@@ -202,7 +201,7 @@ Please create a coherent daily summary that:
                 of AI/ML news articles in {max_length} characters or less. Focus on key developments 
                 and trends. Be informative but brief."""
             )
-            
+
             # Prepare simplified input
             titles_and_summaries = []
             for article in articles[:10]:  # Limit to top 10 for quick summary
@@ -210,23 +209,23 @@ Please create a coherent daily summary that:
                 if article.summary:
                     text += f" - {article.summary[:100]}..."
                 titles_and_summaries.append(text)
-            
+
             input_text = f"""
 Summarize these {len(articles)} AI/ML articles in {max_length} characters:
 
 {chr(10).join(titles_and_summaries)}
 """
-            
+
             result = await quick_agent.run(input_text)
             return result.data.strip()
-            
+
         except Exception as e:
             logger.error(f"Failed to generate quick summary: {e}")
             return f"Summary generation failed for {len(articles)} articles."
-    
+
     async def generate_themed_digest(
         self,
-        articles: List[Article],
+        articles: list[Article],
         theme: str,
         digest_date: datetime
     ) -> DailyDigest:
@@ -247,13 +246,13 @@ Summarize these {len(articles)} AI/ML articles in {max_length} characters:
             for article in articles:
                 if self._is_article_relevant_to_theme(article, theme):
                     relevant_articles.append(article)
-            
+
             if not relevant_articles:
                 logger.warning(f"No articles found relevant to theme: {theme}")
                 relevant_articles = articles[:5]  # Fallback to top articles
-            
+
             logger.info(f"Generating themed digest for '{theme}' with {len(relevant_articles)} articles")
-            
+
             # Modify the input to focus on the theme
             input_text = f"""
 Generate a themed digest focusing specifically on: {theme}
@@ -266,10 +265,10 @@ Articles Analyzed: {len(relevant_articles)}
 
 Please emphasize developments related to {theme} and how they connect to broader trends.
 """
-            
+
             result = await self.agent.run(input_text)
             digest_summary = result.data
-            
+
             # Create themed digest
             digest = DailyDigest(
                 digest_date=digest_date,
@@ -279,13 +278,13 @@ Please emphasize developments related to {theme} and how they connect to broader
                 key_themes=[theme] + digest_summary.key_themes,
                 notable_developments=digest_summary.notable_developments
             )
-            
+
             return digest
-            
+
         except Exception as e:
             logger.error(f"Failed to generate themed digest for '{theme}': {e}")
             raise
-    
+
     def _is_article_relevant_to_theme(self, article: Article, theme: str) -> bool:
         """
         Check if an article is relevant to a specific theme.
@@ -298,25 +297,25 @@ Please emphasize developments related to {theme} and how they connect to broader
             bool: True if article is relevant to theme.
         """
         theme_lower = theme.lower()
-        
+
         # Check title, categories, and key points
         text_to_check = [
             article.title.lower(),
             ' '.join(article.categories or []).lower(),
             ' '.join(article.key_points or []).lower()
         ]
-        
+
         if article.summary:
             text_to_check.append(article.summary.lower())
-        
+
         combined_text = ' '.join(text_to_check)
-        
+
         # Simple keyword matching - could be enhanced with NLP
         theme_keywords = theme_lower.split()
         for keyword in theme_keywords:
             if keyword in combined_text:
                 return True
-        
+
         return False
 
 

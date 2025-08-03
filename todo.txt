@@ -1,9 +1,0 @@
-- update the ux agent, it should be able to create html mocks of requirements give, in prp format
-- prp needs to be tailored to be in a better format to pass to sub agents, look at the base templates, and tailor them for agents, so there could be a template for ui and one for ux, 
-- prp templates & claude commands need to be updated.
-
-
-
-- update the hero section copy to say keep up with the rapid idustry movements and move at the speed of ai
-- Crawling should mimic myself, so if I see a post on say redit about new from saw deep mind I need to go directly to deepmind it self to get the source of the news.
-- reddit and social media can be used fro sentiment and other things the news dont cover, saw for example, a new model comes out reddit my have post about feedback on the model if it sucks or not, and if its a step change than the norm.
