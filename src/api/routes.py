@@ -11,7 +11,6 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
-from fastapi.responses import JSONResponse
 
 from ..agents.news_agent import NewsAnalyzer
 from ..fetchers.factory import fetcher_factory
@@ -19,7 +18,6 @@ from ..models.articles import Article, ArticleSource
 from ..models.schemas import (
     ArticleListResponse,
     DigestResponse,
-    ErrorResponse,
     FetchTriggerRequest,
     FetchTriggerResponse,
     HealthResponse,

@@ -25,6 +25,14 @@ class ArticleRepository:
     including creation, retrieval, updates, and vector similarity searches.
     """
 
+    # Temporary mapping for new source types until database schema is updated
+    _SOURCE_MAPPING = {
+        ArticleSource.YOUTUBE: ArticleSource.RSS,
+        ArticleSource.HUGGINGFACE: ArticleSource.RSS, 
+        ArticleSource.REDDIT: ArticleSource.RSS,
+        ArticleSource.GITHUB: ArticleSource.RSS
+    }
+
     def __init__(self, supabase_client: Client):
         """
         Initialize the article repository.
@@ -419,12 +427,14 @@ class ArticleRepository:
                 "id", count="exact"
             ).execute()
 
-            # Articles by source
+            # Articles by source (using database-compatible source values)
             source_stats = {}
             for source in ArticleSource:
+                # Map new sources to database enum for counting
+                db_source = self._SOURCE_MAPPING.get(source, source)
                 source_response = self.supabase.table("articles").select(
                     "id", count="exact"
-                ).eq("source", source.value).execute()
+                ).eq("source", db_source.value).execute()
                 source_stats[source.value] = source_response.count or 0
 
             # Recent articles (last 24 hours)
@@ -460,9 +470,12 @@ class ArticleRepository:
         Returns:
             Dict: Database dictionary.
         """
+        # Map new source types to existing database enum values
+        db_source = self._SOURCE_MAPPING.get(article.source, article.source)
+        
         data = {
             "source_id": article.source_id,
-            "source": article.source.value,
+            "source": db_source.value,
             "title": article.title,
             "content": article.content,
             "url": article.url,

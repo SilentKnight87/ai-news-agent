@@ -7,6 +7,7 @@ for type safety and validation.
 
 from datetime import datetime
 from enum import Enum
+from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, Field, field_validator
@@ -18,6 +19,10 @@ class ArticleSource(str, Enum):
     ARXIV = "arxiv"
     HACKERNEWS = "hackernews"
     RSS = "rss"
+    YOUTUBE = "youtube"
+    HUGGINGFACE = "huggingface"
+    REDDIT = "reddit"
+    GITHUB = "github"
 
 
 class Article(BaseModel):
@@ -40,6 +45,12 @@ class Article(BaseModel):
     fetched_at: datetime = Field(
         default_factory=datetime.utcnow,
         description="When the article was fetched"
+    )
+
+    # Source-specific metadata
+    metadata: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Source-specific metadata (e.g., YouTube views, GitHub version)"
     )
 
     # AI-generated fields
@@ -159,7 +170,7 @@ class DailyDigest(BaseModel):
         default_factory=list,
         description="Top articles included in this digest"
     )
-    
+
     # AI-generated digest analysis
     key_themes: list[str] = Field(
         default_factory=list,

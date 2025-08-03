@@ -6,8 +6,8 @@ and startup/shutdown event handlers.
 """
 
 import logging
-import sys
 import os
+import sys
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 

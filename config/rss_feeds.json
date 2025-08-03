@@ -18,6 +18,13 @@
     "cloud_providers": {
       "AWS Machine Learning Blog": "https://aws.amazon.com/blogs/machine-learning/feed/",
       "Google Cloud AI Blog": "https://cloud.google.com/blog/topics/ai-machine-learning/rss"
+    },
+    "youtube_channels": {
+      "Two Minute Papers": "https://www.youtube.com/feeds/videos.xml?channel_id=UCbfYPyITQ-7l4upoX8nvctg",
+      "3Blue1Brown": "https://www.youtube.com/feeds/videos.xml?channel_id=UCYO_jab_esuFRV4b17AJtAw",
+      "Yannic Kilcher": "https://www.youtube.com/feeds/videos.xml?channel_id=UCZHmQk67mSJgfCCTn7xBfew",
+      "AI Explained": "https://www.youtube.com/feeds/videos.xml?channel_id=UCNJ1Ymd5yFuUPtn21xtRbbw",
+      "Machine Learning Street Talk": "https://www.youtube.com/feeds/videos.xml?channel_id=UCMLtBahI5DMrt0NPvDSoIRQ"
     }
   }
 }
