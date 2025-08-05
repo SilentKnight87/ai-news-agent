@@ -1,0 +1,14 @@
+[
+  "anthropics/anthropic-sdk-python",
+  "openai/openai-python",
+  "microsoft/semantic-kernel",
+  "langchain-ai/langchain",
+  "chroma-core/chroma",
+  "qdrant/qdrant",
+  "run-llama/llama_index",
+  "huggingface/transformers",
+  "vllm-project/vllm",
+  "ggerganov/llama.cpp",
+  "ollama/ollama",
+  "mlc-ai/mlc-llm"
+]

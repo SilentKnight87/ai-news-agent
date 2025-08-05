@@ -25,7 +25,7 @@ class ArticleRepository:
     including creation, retrieval, updates, and vector similarity searches.
     """
 
-    # Temporary mapping for new source types until database schema is updated
+    # Source mapping for database compatibility - preserves actual source in metadata
     _SOURCE_MAPPING = {
         ArticleSource.YOUTUBE: ArticleSource.RSS,
         ArticleSource.HUGGINGFACE: ArticleSource.RSS, 
@@ -41,7 +41,27 @@ class ArticleRepository:
             supabase_client: Supabase client for database operations.
         """
         self.supabase = supabase_client
+        self._metadata_column_exists = None  # Cache for metadata column check
         logger.info("Article repository initialized")
+
+    def _check_metadata_column_exists(self) -> bool:
+        """
+        Check if the metadata column exists in the articles table.
+        
+        Returns:
+            bool: True if metadata column exists.
+        """
+        if self._metadata_column_exists is None:
+            try:
+                # Try to query the metadata column
+                result = self.supabase.table("articles").select("metadata").limit(1).execute()
+                self._metadata_column_exists = True
+                logger.debug("Metadata column exists in articles table")
+            except Exception:
+                self._metadata_column_exists = False
+                logger.debug("Metadata column does not exist in articles table")
+        
+        return self._metadata_column_exists
 
     async def create_article(self, article: Article) -> Article:
         """
@@ -473,6 +493,11 @@ class ArticleRepository:
         # Map new source types to existing database enum values
         db_source = self._SOURCE_MAPPING.get(article.source, article.source)
         
+        # Preserve actual source type in metadata if it's being mapped
+        metadata = dict(article.metadata)  # Copy existing metadata
+        if article.source in self._SOURCE_MAPPING:
+            metadata["_actual_source"] = article.source.value
+        
         data = {
             "source_id": article.source_id,
             "source": db_source.value,
@@ -489,6 +514,10 @@ class ArticleRepository:
             "is_duplicate": article.is_duplicate,
             "duplicate_of": str(article.duplicate_of) if article.duplicate_of else None
         }
+        
+        # Include metadata if column exists
+        if self._check_metadata_column_exists():
+            data["metadata"] = metadata
 
         # Handle embedding
         if article.embedding:
@@ -518,6 +547,23 @@ class ArticleRepository:
             except (json.JSONDecodeError, TypeError):
                 embedding = None
 
+        # Parse metadata and restore actual source if available
+        metadata = data.get("metadata", {})
+        if isinstance(metadata, str):
+            try:
+                metadata = json.loads(metadata)
+            except (json.JSONDecodeError, TypeError):
+                metadata = {}
+        
+        # Restore actual source from metadata if it was mapped
+        actual_source = metadata.get("_actual_source")
+        if actual_source:
+            source = ArticleSource(actual_source)
+            # Remove the internal field from metadata
+            metadata = {k: v for k, v in metadata.items() if k != "_actual_source"}
+        else:
+            source = ArticleSource(data["source"])
+
         # Parse timestamps
         published_at = datetime.fromisoformat(
             data["published_at"].replace("Z", "+00:00")
@@ -529,7 +575,7 @@ class ArticleRepository:
         return Article(
             id=UUID(data["id"]) if data.get("id") else None,
             source_id=data["source_id"],
-            source=ArticleSource(data["source"]),
+            source=source,
             title=data["title"],
             content=data["content"],
             url=data["url"],
@@ -542,5 +588,6 @@ class ArticleRepository:
             key_points=data.get("key_points", []),
             embedding=embedding,
             is_duplicate=data.get("is_duplicate", False),
-            duplicate_of=UUID(data["duplicate_of"]) if data.get("duplicate_of") else None
+            duplicate_of=UUID(data["duplicate_of"]) if data.get("duplicate_of") else None,
+            metadata=metadata
         )
