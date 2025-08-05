@@ -8,13 +8,13 @@ The AI agent only gets the context you are appending to the PRP and training dat
 
 ## Available MCP Tools
 
-### 1. **Supabase MCP** (`mcp__supabase__*`)
+### 1. **Supabase MCP**
 - Database operations (create tables, migrations, queries)
 - Branch management for testing
 - Log retrieval for debugging
 - Use for: Database schema changes, data operations, debugging
 
-### 2. **Context7 MCP** (`mcp__context7__*`)
+### 2. **Context7 MCP**
 - Retrieve up-to-date library documentation
 - Get code examples from popular packages
 - Use for: Library research, API documentation, implementation patterns
@@ -64,21 +64,12 @@ When generating PRPs from specs, consider which specialized subagent might be us
 
 2. **External Research with MCP**
    - **Use Context7 MCP** to get latest library documentation:
-     ```
-     mcp__context7__resolve-library-id for library name resolution
-     mcp__context7__get-library-docs for documentation retrieval
-     ```
    - Search for implementation examples online
    - Note version-specific features and gotchas
    - **Document MCP queries used** for reproducibility
 
 3. **Database Schema Research** (if applicable)
    - **Use Supabase MCP** to inspect current schema:
-     ```
-     mcp__supabase__list_tables
-     mcp__supabase__list_extensions
-     mcp__supabase__get_advisors for performance/security checks
-     ```
    - Document required migrations or schema changes
 
 4. **User Clarification** (if needed)
@@ -155,7 +146,6 @@ Include in PRP when to use each tool:
 - **Supabase MCP**: Any database operations, schema changes, debugging
 - **Context7 MCP**: Library research, API documentation needs
 - **Playwright MCP**: Frontend changes requiring visual/interaction testing
-- **IDE MCP**: Code execution validation, Jupyter notebook operations
 
 *** CRITICAL AFTER YOU ARE DONE RESEARCHING AND EXPLORING THE CODEBASE BEFORE YOU START WRITING THE PRP ***
 
