@@ -1,13 +1,15 @@
 """
-Reddit fetcher for r/LocalLLaMA community discussions.
+Reddit fetcher for AI/ML community discussions.
 
 This module implements fetching from Reddit using asyncpraw with filtering
 for high-quality posts and community engagement metrics.
 """
 
 import asyncio
+import json
 import logging
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any
 
 try:
@@ -24,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 class RedditFetcher(BaseFetcher):
     """
-    Fetcher for Reddit r/LocalLLaMA subreddit.
+    Fetcher for Reddit AI/ML subreddits.
     
     Fetches high-quality posts and discussions with engagement filtering
     and community insights extraction.
@@ -64,15 +66,31 @@ class RedditFetcher(BaseFetcher):
             user_agent=self.user_agent
         )
 
-        self.subreddit_name = "LocalLLaMA"
+        self.subreddits = self._load_subreddits()
         self.min_upvotes = 50
         self.min_comments = 10
 
-        logger.info(f"Reddit fetcher initialized for r/{self.subreddit_name}")
+        logger.info(f"Reddit fetcher initialized for {len(self.subreddits)} subreddits")
+    
+    def _load_subreddits(self) -> list[str]:
+        """Load subreddits from config file."""
+        config_path = Path(__file__).parent.parent.parent / "config" / "reddit_subs.json"
+        
+        try:
+            with open(config_path) as f:
+                subs = json.load(f)
+                logger.debug(f"Loaded {len(subs)} subreddits from config")
+                return subs
+        except FileNotFoundError:
+            logger.warning(f"Config file not found at {config_path}, using default")
+            return ["LocalLLaMA"]
+        except json.JSONDecodeError as e:
+            logger.error(f"Invalid JSON in config file: {e}")
+            return ["LocalLLaMA"]
 
     async def fetch(self, max_articles: int = 50) -> list[Article]:
         """
-        Fetch quality posts from r/LocalLLaMA.
+        Fetch quality posts from configured subreddits.
         
         Args:
             max_articles: Maximum number of articles to return.
@@ -84,52 +102,64 @@ class RedditFetcher(BaseFetcher):
             FetchError: If fetching fails.
         """
         try:
-            logger.info(f"Fetching posts from r/{self.subreddit_name}")
+            logger.info(f"Fetching posts from {len(self.subreddits)} subreddits")
+            all_articles = []
+            
+            # Fetch from each subreddit
+            articles_per_sub = max(max_articles // len(self.subreddits), 10)
+            
+            for subreddit_name in self.subreddits:
+                try:
+                    logger.debug(f"Fetching from r/{subreddit_name}")
+                    subreddit = await self.reddit.subreddit(subreddit_name)
+                    
+                    # Fetch from multiple streams concurrently
+                    hot_task = self._fetch_from_stream(subreddit.hot(limit=50), "hot")
+                    top_day_task = self._fetch_from_stream(subreddit.top(time_filter="day", limit=25), "top_day")
+                    top_week_task = self._fetch_from_stream(subreddit.top(time_filter="week", limit=25), "top_week")
 
-            subreddit = await self.reddit.subreddit(self.subreddit_name)
-            articles = []
+                    hot_posts, top_day_posts, top_week_posts = await asyncio.gather(
+                        hot_task, top_day_task, top_week_task, return_exceptions=True
+                    )
 
-            # Fetch from multiple streams concurrently
-            hot_task = self._fetch_from_stream(subreddit.hot(limit=50), "hot")
-            top_day_task = self._fetch_from_stream(subreddit.top(time_filter="day", limit=25), "top_day")
-            top_week_task = self._fetch_from_stream(subreddit.top(time_filter="week", limit=25), "top_week")
+                    # Handle exceptions
+                    all_posts = []
+                    for posts, stream_name in [(hot_posts, "hot"), (top_day_posts, "top_day"), (top_week_posts, "top_week")]:
+                        if isinstance(posts, Exception):
+                            logger.warning(f"Failed to fetch {stream_name} posts from r/{subreddit_name}: {posts}")
+                        else:
+                            all_posts.extend(posts)
 
-            hot_posts, top_day_posts, top_week_posts = await asyncio.gather(
-                hot_task, top_day_task, top_week_task, return_exceptions=True
-            )
+                    # Deduplicate posts by ID
+                    seen_ids = set()
+                    unique_posts = []
+                    for post in all_posts:
+                        if post.id not in seen_ids:
+                            unique_posts.append(post)
+                            seen_ids.add(post.id)
 
-            # Handle exceptions
-            all_posts = []
-            for posts, stream_name in [(hot_posts, "hot"), (top_day_posts, "top_day"), (top_week_posts, "top_week")]:
-                if isinstance(posts, Exception):
-                    logger.warning(f"Failed to fetch {stream_name} posts: {posts}")
-                else:
-                    all_posts.extend(posts)
+                    # Convert to articles with filtering
+                    for post in unique_posts[:articles_per_sub]:
+                        if self._is_quality_post(post):
+                            try:
+                                article = await self._submission_to_article(post)
+                                if article:
+                                    # Add subreddit to metadata
+                                    article.metadata['subreddit'] = subreddit_name
+                                    all_articles.append(article)
+                            except Exception as e:
+                                logger.warning(f"Failed to convert post {post.id}: {e}")
+                                continue
+                                
+                except Exception as e:
+                    logger.warning(f"Failed to fetch from r/{subreddit_name}: {e}")
+                    continue
 
-            # Deduplicate posts by ID
-            seen_ids = set()
-            unique_posts = []
-            for post in all_posts:
-                if post.id not in seen_ids:
-                    unique_posts.append(post)
-                    seen_ids.add(post.id)
+            # Sort all articles by engagement score and limit results
+            all_articles.sort(key=lambda x: x.metadata.get('engagement_score', 0), reverse=True)
+            limited_articles = all_articles[:max_articles]
 
-            # Convert to articles with filtering
-            for post in unique_posts:
-                if self._is_quality_post(post):
-                    try:
-                        article = await self._submission_to_article(post)
-                        if article:
-                            articles.append(article)
-                    except Exception as e:
-                        logger.warning(f"Failed to convert post {post.id}: {e}")
-                        continue
-
-            # Sort by engagement score and limit results
-            articles.sort(key=lambda x: x.metadata.get('engagement_score', 0), reverse=True)
-            limited_articles = articles[:max_articles]
-
-            logger.info(f"Successfully fetched {len(limited_articles)} articles from r/{self.subreddit_name}")
+            logger.info(f"Successfully fetched {len(limited_articles)} articles from {len(self.subreddits)} subreddits")
             return limited_articles
 
         except Exception as e:
@@ -315,7 +345,7 @@ class RedditFetcher(BaseFetcher):
         """
         metadata = {
             "platform": "reddit",
-            "subreddit": self.subreddit_name,
+            "subreddit": "",  # Will be set per article in fetch method
             "post_id": getattr(submission, 'id', ''),
             "upvotes": getattr(submission, 'score', 0),
             "comments": getattr(submission, 'num_comments', 0),

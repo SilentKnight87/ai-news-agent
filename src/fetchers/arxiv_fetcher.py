@@ -6,8 +6,10 @@ their rate limiting requirements (3-second delay between requests).
 """
 
 import asyncio
+import json
 import logging
 from datetime import datetime, timedelta
+from pathlib import Path
 
 import arxiv
 
@@ -38,12 +40,30 @@ class ArxivFetcher(BaseFetcher):
             num_retries=5
         )
 
-        # AI/ML categories to search
-        self.categories = ["cs.AI", "cs.LG", "cs.CL"]
+        # Load categories from config
+        self.categories, self.max_results = self._load_config()
 
-        logger.info(f"ArXiv fetcher initialized with {self.rate_limit_delay}s delay")
+        logger.info(f"ArXiv fetcher initialized with {self.rate_limit_delay}s delay, tracking {len(self.categories)} categories")
+    
+    def _load_config(self) -> tuple[list[str], int]:
+        """Load categories and settings from config file."""
+        config_path = Path(__file__).parent.parent.parent / "config" / "arxiv_categories.json"
+        
+        try:
+            with open(config_path) as f:
+                config = json.load(f)
+                categories = config.get("categories", ["cs.AI", "cs.LG", "cs.CL"])
+                max_results = config.get("max_results", 50)
+                logger.debug(f"Loaded {len(categories)} categories from config")
+                return categories, max_results
+        except FileNotFoundError:
+            logger.warning(f"Config file not found at {config_path}, using defaults")
+            return ["cs.AI", "cs.LG", "cs.CL"], 50
+        except json.JSONDecodeError as e:
+            logger.error(f"Invalid JSON in config file: {e}")
+            return ["cs.AI", "cs.LG", "cs.CL"], 50
 
-    async def fetch(self, max_articles: int = 100) -> list[Article]:
+    async def fetch(self, max_articles: int | None = None) -> list[Article]:
         """
         Fetch recent AI/ML papers from ArXiv.
 
@@ -57,6 +77,10 @@ class ArxivFetcher(BaseFetcher):
             FetchError: If fetching fails.
         """
         try:
+            # Use configured max_results if not specified
+            if max_articles is None:
+                max_articles = self.max_results
+            
             logger.info(f"Fetching up to {max_articles} papers from ArXiv")
 
             # Build query for AI/ML categories

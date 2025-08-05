@@ -57,6 +57,22 @@
 - **Always confirm file paths and module names** exist before referencing them in code or tests.
 - **Never delete or overwrite existing code** unless explicitly instructed to or if part of a task from `TASK.md`.
 
+### 🤖 Agent Usage
+- **Always use agents proactively** when their description matches the task at hand
+- **code-reviewer**: Use after writing significant code (functions, classes, modules)
+  - Has access to all MCP tools for checking docs, database impacts, etc.
+- **backend-api-architect**: Use when designing/implementing APIs, backends, or server architectures
+  - Can use Supabase MCP for Edge Functions and database integration
+- **database-architect**: Use when designing database schemas or optimizing queries
+  - Has full Supabase MCP access for migrations, schema analysis, performance advisories
+- **ui-component-builder**: Use when creating UI components that need styling
+  - Can use Playwright MCP to preview/test components in browser
+- **ux-design-architect**: Use when designing user experiences or interfaces
+  - Can use Playwright MCP for prototyping and testing flows
+- **general-purpose**: Use for complex multi-step research tasks
+  - Has access to all tools including web search and documentation
+- Don't wait to be asked - if the task matches an agent's purpose, use it immediately
+
 DO NOT include the following in code comments:
 " 🤖 Generated with [Claude Code](https://claude.ai/code)
 Co-Authored-By: Claude <noreply@anthropic.com>"

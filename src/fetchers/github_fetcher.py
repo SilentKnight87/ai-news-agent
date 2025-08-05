@@ -6,8 +6,11 @@ for recent releases from important AI/ML repositories.
 """
 
 import asyncio
+import json
 import logging
+import os
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from typing import Any
 
 from ..models.articles import Article, ArticleSource
@@ -47,23 +50,31 @@ class GitHubFetcher(BaseFetcher):
         if github_token:
             self.headers["Authorization"] = f"token {github_token}"
 
-        # Important AI/ML repositories to track
-        self.repositories = [
-            "anthropics/anthropic-sdk-python",
-            "modelcontextprotocol/servers",
-            "openai/openai-python",
-            "huggingface/transformers",
-            "microsoft/DeepSpeed",
-            "facebookresearch/llama",
-            "pytorch/pytorch",
-            "tensorflow/tensorflow",
-            "langchain-ai/langchain",
-            "ollama/ollama",
-            "ggerganov/llama.cpp",
-            "vllm-project/vllm"
-        ]
-
+        # Load repositories from config file
+        self.repositories = self._load_repositories()
         logger.info(f"GitHub fetcher initialized tracking {len(self.repositories)} repositories")
+    
+    def _load_repositories(self) -> list[str]:
+        """Load GitHub repositories from config file."""
+        config_path = Path(__file__).parent.parent.parent / "config" / "github_repos.json"
+        
+        try:
+            with open(config_path) as f:
+                repos = json.load(f)
+                logger.debug(f"Loaded {len(repos)} repositories from config")
+                return repos
+        except FileNotFoundError:
+            logger.warning(f"Config file not found at {config_path}, using defaults")
+            # Fallback to default repositories
+            return [
+                "anthropics/anthropic-sdk-python",
+                "openai/openai-python",
+                "langchain-ai/langchain",
+                "ollama/ollama"
+            ]
+        except json.JSONDecodeError as e:
+            logger.error(f"Invalid JSON in config file: {e}")
+            return []
 
     async def fetch(self, max_articles: int = 50) -> list[Article]:
         """
