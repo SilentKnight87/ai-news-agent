@@ -15,8 +15,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from .api.routes import router
-from .config import get_settings
+from src.api.routes import router
+from src.config import get_settings
 
 # Configure logging
 handlers = [logging.StreamHandler(sys.stdout)]

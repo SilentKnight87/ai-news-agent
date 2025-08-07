@@ -2,7 +2,7 @@
 Text-to-Speech service using ElevenLabs API.
 
 This module provides text-to-speech capabilities for converting
-daily digests into audio format for consumption while commuting.
+daily digests into audio format for consumption.
 """
 
 import asyncio
