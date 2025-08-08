@@ -48,6 +48,11 @@
 - [x] Mobile-responsive design foundation
 - [x] SWR integration for data fetching and caching
 - [x] Error boundaries and skeleton loading states
+- [x] Aurora background + accent/brand tokens
+- [x] Reduced-motion support across major components (Hero, Rows, Cards, Modal, Audio)
+- [x] FilterBar spacing resolved (no overlap)
+- [x] ArticleCard alignment stabilized (grid layout; fixed footer for date/relevance)
+- [x] Design plan updated and moved to `spec/frontend-design-plan.md`
 
 ---
 
@@ -58,7 +63,7 @@
 **Priority**: Critical  
 
 **Critical UI Issues:**
-- [ ] **Filter Bar Layout**: Fix overlapping elements in relevance slider row - spacing issues
+- [x] **Filter Bar Layout**: Resolved spacing/overlap in relevance slider row
 - [ ] **Card Images**: Investigate data source image/thumbnail availability and implement (currently showing placeholders)
 - [ ] **Article Body Formatting**: Clean up LaTeX symbols in article content (`\`, `65\%`, `\textit{}`, `\textbf{}`)
 - [ ] **Modal Actions**: Remove share, bookmark, and reanalyze buttons from article modal
@@ -173,7 +178,7 @@ The TTS service is fully functional but completely disconnected from the digest 
 *Address immediate frontend issues for better user experience*
 
 **Priority Tasks:**
-1. **Fix Filter Bar Layout Issues**
+1. **Fix Filter Bar Layout Issues (Completed)**
    - Resolve overlapping elements in relevance slider row
    - Fix spacing and alignment issues
    - Test responsive behavior across screen sizes
@@ -312,7 +317,7 @@ The TTS service is fully functional but completely disconnected from the digest 
 
 | Issue | Impact | Effort | Priority | Phase | Reference |
 |-------|--------|--------|----------|-------|-----------|
-| Filter Bar Layout Fix | HIGH | LOW | **CRITICAL** | 1 | Frontend UI Issues |
+| Filter Bar Layout Fix (Completed) | HIGH | LOW | DONE | — | Frontend UI Issues |
 | Article Body Formatting | HIGH | MEDIUM | **CRITICAL** | 1 | Content Quality |
 | AI Analysis Assessment | HIGH | MEDIUM | **HIGH** | 1 | Quality Validation |
 | Card Image Implementation | HIGH | HIGH | **HIGH** | 2 | Data Source Integration |
@@ -327,7 +332,7 @@ The TTS service is fully functional but completely disconnected from the digest 
 ## 🚀 **UPDATED NEXT ACTIONS**
 
 ### Immediate (This Week)
-1. **Fix critical UI issues** - Filter bar layout, article body formatting
+1. **Fix critical UI issues** - Article body formatting
 2. **Assess AI analysis quality** - Summary accuracy, tag system, relevance scoring
 3. **Clean up modal interface** - Remove unnecessary buttons, assess related articles
 
