@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX } from 'lucide-react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { formatDuration } from '@/lib/utils'
 
 interface AudioPlayerProps {
@@ -20,6 +20,7 @@ export function AudioPlayer({
   variant = 'full',
   onClose 
 }: AudioPlayerProps) {
+  const reduce = useReducedMotion()
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [totalDuration, setTotalDuration] = useState(duration)
@@ -125,9 +126,9 @@ export function AudioPlayer({
   return (
     <AnimatePresence>
       <motion.div
-        initial={{ y: 100, opacity: 0 }}
+        initial={reduce ? undefined : { y: 100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        exit={{ y: 100, opacity: 0 }}
+        exit={reduce ? undefined : { y: 100, opacity: 0 }}
         className="fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-800 z-50"
       >
         <audio ref={audioRef} src={audioUrl} />

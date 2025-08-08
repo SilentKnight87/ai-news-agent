@@ -1,7 +1,8 @@
 "use client"
 
 import { BarChart3, TrendingUp, Clock, Sparkles, Activity } from "lucide-react"
-import { motion, Variants } from "framer-motion"
+import { motion, Variants, useReducedMotion } from "framer-motion"
+import Aurora from "@/components/Aurora"
 import { Digest, Stats } from "@/types"
 
 interface HeroSectionProps {
@@ -10,24 +11,26 @@ interface HeroSectionProps {
 }
 
 export default function HeroSection({ digest, stats }: HeroSectionProps) {
+  const reduce = useReducedMotion()
+
   const containerVariants: Variants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.1,
-        delayChildren: 0.2
+        staggerChildren: reduce ? 0 : 0.1,
+        delayChildren: reduce ? 0 : 0.2,
       }
     }
   }
 
   const itemVariants: Variants = {
-    hidden: { opacity: 0, y: 20 },
+    hidden: { opacity: 0, y: reduce ? 0 : 20 },
     visible: {
       opacity: 1,
       y: 0,
       transition: {
-        duration: 0.5,
+        duration: reduce ? 0 : 0.5,
         ease: "easeOut"
       }
     }
@@ -37,6 +40,7 @@ export default function HeroSection({ digest, stats }: HeroSectionProps) {
     <section className="relative min-h-[600px] bg-gradient-to-b from-black via-gray-900/50 to-black overflow-hidden pt-28 pb-16">
       {/* MVP Blocks Style Background Pattern */}
       <div className="absolute inset-0">
+        <Aurora />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-gray-900/20 via-transparent to-transparent" />
         <div 
           className="absolute inset-0 opacity-5"
