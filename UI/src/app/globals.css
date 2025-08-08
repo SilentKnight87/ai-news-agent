@@ -32,6 +32,16 @@
   --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-out: cubic-bezier(0, 0, 0.2, 1);
   --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* Brand */
+  --accent: #8b5cf6; /* violet-500 as default accent */
+
+  /* Palette from ai_docs/color-palette.md */
+  --black-bean: #230007; /* primary deep background accent */
+  --citrine: #d7cf07;    /* bright accent */
+  --fulvous: #d98324;    /* secondary accent */
+  --turkey-red: #a40606; /* error/highlight */
+  --rosewood: #5a0002;   /* deep accent */
 }
 
 /* Remove @theme inline - not compatible with Tailwind v3 */

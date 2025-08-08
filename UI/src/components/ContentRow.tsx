@@ -2,7 +2,7 @@
 
 import { useRef, useState, useEffect } from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
-import { motion, AnimatePresence } from "framer-motion"
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion"
 import { cn } from "@/lib/utils"
 
 interface ContentRowProps {
@@ -17,6 +17,7 @@ export default function ContentRow({ title, subtitle, children, id }: ContentRow
   const [showLeftArrow, setShowLeftArrow] = useState(false)
   const [showRightArrow, setShowRightArrow] = useState(true)
   const [isHovered, setIsHovered] = useState(false)
+  const reduce = useReducedMotion()
 
   const checkScrollPosition = () => {
     if (!scrollContainerRef.current) return
@@ -92,7 +93,7 @@ export default function ContentRow({ title, subtitle, children, id }: ContentRow
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
+              transition={{ duration: reduce ? 0 : 0.2 }}
               onClick={() => scroll("left")}
               className={cn(
                 "absolute left-0 top-0 bottom-0 z-20 w-16",
@@ -117,7 +118,7 @@ export default function ContentRow({ title, subtitle, children, id }: ContentRow
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
+              transition={{ duration: reduce ? 0 : 0.2 }}
               onClick={() => scroll("right")}
               className={cn(
                 "absolute right-0 top-0 bottom-0 z-20 w-16",

@@ -58,12 +58,12 @@ export default function FilterBar({ onFilterChange, className }: FilterBarProps)
           {/* Primary Filters */}
           <div className="flex flex-wrap items-center gap-4">
             {/* Relevance Slider */}
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center gap-3">
               <div className="flex items-center space-x-2">
                 <TrendingUp className="w-4 h-4 text-gray-400" />
                 <span className="text-sm text-gray-300">Relevance</span>
               </div>
-              <div className="relative w-32">
+              <div className="flex items-center gap-2 w-48 sm:w-56">
                 <input
                   type="range"
                   min="0"
@@ -75,14 +75,14 @@ export default function FilterBar({ onFilterChange, className }: FilterBarProps)
                     background: `linear-gradient(to right, #10b981 0%, #10b981 ${filters.relevance}%, #374151 ${filters.relevance}%, #374151 100%)`
                   }}
                 />
-                <span className="absolute -right-12 top-1/2 -translate-y-1/2 text-xs text-gray-400">
+                <span className="text-xs text-gray-400 tabular-nums w-10 text-right">
                   {filters.relevance}%
                 </span>
               </div>
             </div>
 
             {/* Time Range Dropdown */}
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2 min-w-36">
               <Clock className="w-4 h-4 text-gray-400" />
               <select
                 value={filters.timeRange}
@@ -98,7 +98,7 @@ export default function FilterBar({ onFilterChange, className }: FilterBarProps)
             </div>
 
             {/* Sort Options */}
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2 min-w-28">
               <Filter className="w-4 h-4 text-gray-400" />
               <select
                 value={filters.sortBy}

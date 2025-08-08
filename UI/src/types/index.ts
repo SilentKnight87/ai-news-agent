@@ -10,8 +10,11 @@ export interface Article {
   created_at: string
   updated_at: string
   thumbnail?: string
+  image_url?: string
   author?: string
   content?: string
+  tags?: string[]
+  comments_count?: number
 }
 
 export interface Digest {

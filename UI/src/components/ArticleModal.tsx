@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react"
 import { X, ExternalLink, RefreshCw, Share2, Bookmark, TrendingUp, Clock, User } from "lucide-react"
-import { motion, AnimatePresence } from "framer-motion"
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion"
 import { Article } from "@/types"
 import { cn, formatTimeAgo, getRelevanceColor, getSourceIcon } from "@/lib/utils"
 
@@ -14,6 +14,7 @@ interface ArticleModalProps {
 }
 
 export default function ArticleModal({ article, isOpen, onClose, onReanalyze }: ArticleModalProps) {
+  const reduce = useReducedMotion()
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [activeTab, setActiveTab] = useState<"summary" | "analysis" | "related">("summary")
   const modalRef = useRef<HTMLDivElement>(null)
@@ -97,10 +98,10 @@ export default function ArticleModal({ article, isOpen, onClose, onReanalyze }: 
           {/* Modal */}
           <motion.div
             ref={modalRef}
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            initial={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            transition={{ duration: 0.3, ease: "easeOut" }}
+            exit={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.95, y: 20 }}
+            transition={{ duration: reduce ? 0 : 0.3, ease: "easeOut" }}
             className="fixed inset-x-4 top-[5%] bottom-[5%] max-w-4xl mx-auto z-50 flex flex-col"
             data-testid="article-modal"
           >

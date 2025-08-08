@@ -2,8 +2,9 @@
 
 import { Article } from "@/types"
 import { formatDistanceToNow } from "date-fns"
-import { Calendar, Clock, TrendingUp, ExternalLink, Play, FileText, MessageSquare } from "lucide-react"
-import { motion } from "framer-motion"
+import { Calendar, TrendingUp, Play, MessageSquare } from "lucide-react"
+import { motion, useReducedMotion } from "framer-motion"
+import Image from "next/image"
 import { cn } from "@/lib/utils"
 
 interface ArticleCardProps {
@@ -13,6 +14,7 @@ interface ArticleCardProps {
 }
 
 export default function ArticleCard({ article, onClick, isVideo }: ArticleCardProps) {
+  const reduce = useReducedMotion()
   const getRelevanceColor = (score: number) => {
     if (score >= 80) return "from-green-500/20 to-emerald-500/20 border-green-500/30"
     if (score >= 60) return "from-yellow-500/20 to-amber-500/20 border-yellow-500/30"
@@ -46,8 +48,8 @@ export default function ArticleCard({ article, onClick, isVideo }: ArticleCardPr
   return (
     <motion.article
       className="group relative flex-shrink-0 w-80"
-      whileHover={{ scale: 1.02 }}
-      transition={{ duration: 0.2, ease: "easeOut" }}
+      whileHover={reduce ? undefined : { scale: 1.02 }}
+      transition={{ duration: reduce ? 0 : 0.2, ease: "easeOut" }}
     >
       <button
         onClick={() => onClick(article)}
@@ -58,13 +60,17 @@ export default function ArticleCard({ article, onClick, isVideo }: ArticleCardPr
         <div className="relative h-[420px] bg-gradient-to-b from-gray-900/50 to-gray-900/80 backdrop-blur-sm rounded-xl border border-gray-800/50 overflow-hidden transition-all duration-300 hover:border-gray-700/50 hover:shadow-2xl">
           {/* Top Section - Image or Gradient */}
           <div className="relative h-44 overflow-hidden bg-gradient-to-br from-gray-800 to-gray-900">
-            {article.image_url ? (
-              <img
-                src={article.image_url}
-                alt={article.title}
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                loading="lazy"
-              />
+            {article.thumbnail ? (
+              <div className="absolute inset-0">
+                <Image
+                  src={article.thumbnail}
+                  alt={article.title}
+                  fill
+                  className="object-cover transition-transform duration-500 group-hover:scale-105"
+                  sizes="(max-width: 768px) 320px, 320px"
+                  priority={false}
+                />
+              </div>
             ) : (
               <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-800/50 to-gray-900/50">
                 <div className="text-6xl opacity-20">{getSourceIcon(article.source)}</div>
@@ -81,68 +87,71 @@ export default function ArticleCard({ article, onClick, isVideo }: ArticleCardPr
               </div>
             )}
 
-            {/* Source Badge */}
-            <div className="absolute top-3 left-3 flex items-center gap-2 px-3 py-1.5 bg-black/60 backdrop-blur-sm rounded-lg">
-              <span className="text-sm">{getSourceIcon(article.source)}</span>
-              <span className="text-xs font-medium text-gray-200 capitalize">{article.source}</span>
+            {/* Source Badge with subtle gradient border */}
+            <div className="absolute top-3 left-3 p-[1px] rounded-lg bg-gradient-to-r from-white/10 to-white/5">
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-black/60 backdrop-blur-sm rounded-[7px]">
+                <span className="text-sm">{getSourceIcon(article.source)}</span>
+                <span className="text-xs font-medium text-gray-200 capitalize">{article.source}</span>
+              </div>
             </div>
+
+            {/* Soft glow ring on hover */}
+            <div className="absolute inset-0 rounded-xl ring-0 group-hover:ring-2 ring-white/5 transition" />
           </div>
 
-          {/* Content Section */}
-          <div className="relative p-5 space-y-3">
-            {/* Title */}
-            <h3 className="text-base font-semibold text-white leading-tight line-clamp-2 group-hover:text-gray-100 transition-colors">
+          {/* Content Section with grid to lock bottom row alignment */}
+          <div className="relative p-5 grid grid-rows-[auto_auto_auto_1fr_auto] gap-3 h-[244px]">
+            {/* Title (reserve space for up to 2 lines) */}
+            <h3 className="min-h-[44px] text-base font-semibold text-white leading-snug line-clamp-2 group-hover:text-gray-100 transition-colors">
               {article.title}
             </h3>
 
-            {/* Description */}
-            <p className="text-sm text-gray-400 line-clamp-2 leading-relaxed">
+            {/* Description (reserve space for up to 2 lines) */}
+            <p className="min-h-[48px] text-sm text-gray-400 line-clamp-2 leading-relaxed">
               {truncateText(article.summary || article.content || "", 120)}
             </p>
 
-            {/* Metadata Grid */}
-            <div className="flex items-center justify-between pt-2">
-              {/* Date */}
+            {/* Tags -> use categories preview; reserve fixed height to align cards */}
+            <div className="pt-2 min-h-[44px]">
+              <div className="flex flex-wrap gap-1.5">
+                {(article.categories || []).slice(0, 3).map((category: string, index: number) => (
+                  <span
+                    key={index}
+                    className="px-2 py-1 text-[10px] font-medium text-gray-400 bg-gray-800/50 rounded-md uppercase tracking-wider"
+                  >
+                    {category}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* Spacer row to push footer to bottom consistently */}
+            <div />
+
+            {/* Bottom row: date left, relevance right */}
+            <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5 text-xs text-gray-500">
                 <Calendar className="w-3 h-3" />
                 <span>{formatDistanceToNow(new Date(article.published_at), { addSuffix: true })}</span>
               </div>
 
-              {/* Comments/Engagement */}
-              {article.comments_count !== undefined && article.comments_count > 0 && (
-                <div className="flex items-center gap-1.5 text-xs text-gray-500">
-                  <MessageSquare className="w-3 h-3" />
-                  <span>{article.comments_count}</span>
-                </div>
-              )}
-            </div>
-
-            {/* Relevance Score - Origin UI Style */}
-            <div className={cn(
-              "absolute bottom-5 right-5 px-3 py-1.5 rounded-lg bg-gradient-to-br border",
-              getRelevanceColor(article.relevance_score)
-            )}>
-              <div className="flex items-center gap-1.5">
-                <TrendingUp className="w-3 h-3" />
-                <span className={cn("text-xs font-bold", getRelevanceTextColor(article.relevance_score))}>
-                  {article.relevance_score}%
-                </span>
-              </div>
-            </div>
-
-            {/* Tags */}
-            {article.tags && article.tags.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 pt-2">
-                {article.tags.slice(0, 3).map((tag, index) => (
-                  <span
-                    key={index}
-                    className="px-2 py-1 text-[10px] font-medium text-gray-400 bg-gray-800/50 rounded-md uppercase tracking-wider"
-                  >
-                    {tag}
+              <div className={cn(
+                "px-3 py-1.5 rounded-lg bg-gradient-to-br border",
+                getRelevanceColor(article.relevance_score)
+              )}>
+                <div className="flex items-center gap-1.5">
+                  <TrendingUp className="w-3 h-3" />
+                  <span className={cn("text-xs font-bold", getRelevanceTextColor(article.relevance_score))}>
+                    {article.relevance_score}%
                   </span>
-                ))}
+                </div>
               </div>
-            )}
+            </div>
+
+            {/* Comments/Engagement placeholder (kept hidden) */}
+            <div className="hidden">
+              <MessageSquare className="w-3 h-3" />
+            </div>
           </div>
 
           {/* Hover Effect - Bottom Gradient */}
