@@ -6,6 +6,7 @@ import { Calendar, TrendingUp, Play, MessageSquare } from "lucide-react"
 import { motion, useReducedMotion } from "framer-motion"
 import Image from "next/image"
 import { cn } from "@/lib/utils"
+import { cleanAndTruncate } from "@/lib/latex"
 
 interface ArticleCardProps {
   article: Article
@@ -40,10 +41,7 @@ export default function ArticleCard({ article, onClick, isVideo }: ArticleCardPr
     return icons[source.toLowerCase()] || "📄"
   }
 
-  const truncateText = (text: string, maxLength: number) => {
-    if (text.length <= maxLength) return text
-    return text.substring(0, maxLength).trim() + "..."
-  }
+  // description cleanup handled via cleanAndTruncate (see @/lib/latex)
 
   return (
     <motion.article
@@ -60,22 +58,28 @@ export default function ArticleCard({ article, onClick, isVideo }: ArticleCardPr
         <div className="relative h-[420px] bg-gradient-to-b from-gray-900/50 to-gray-900/80 backdrop-blur-sm rounded-xl border border-gray-800/50 overflow-hidden transition-all duration-300 hover:border-gray-700/50 hover:shadow-2xl">
           {/* Top Section - Image or Gradient */}
           <div className="relative h-44 overflow-hidden bg-gradient-to-br from-gray-800 to-gray-900">
-            {article.thumbnail ? (
-              <div className="absolute inset-0">
-                <Image
-                  src={article.thumbnail}
-                  alt={article.title}
-                  fill
-                  className="object-cover transition-transform duration-500 group-hover:scale-105"
-                  sizes="(max-width: 768px) 320px, 320px"
-                  priority={false}
-                />
-              </div>
-            ) : (
-              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-800/50 to-gray-900/50">
-                <div className="text-6xl opacity-20">{getSourceIcon(article.source)}</div>
-              </div>
-            )}
+            {(() => {
+              const imageSrc = article.image_url || article.thumbnail;
+              if (imageSrc) {
+                return (
+                  <div className="absolute inset-0">
+                    <Image
+                      src={imageSrc}
+                      alt={article.title}
+                      fill
+                      className="object-cover transition-transform duration-500 group-hover:scale-105"
+                      sizes="(max-width: 768px) 320px, 320px"
+                      priority={false}
+                    />
+                  </div>
+                );
+              }
+              return (
+                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-800/50 to-gray-900/50">
+                  <div className="text-6xl opacity-20">{getSourceIcon(article.source)}</div>
+                </div>
+              );
+            })()}
             
             {/* Overlay Gradient */}
             <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/50 to-transparent" />
@@ -108,7 +112,7 @@ export default function ArticleCard({ article, onClick, isVideo }: ArticleCardPr
 
             {/* Description (reserve space for up to 2 lines) */}
             <p className="min-h-[48px] text-sm text-gray-400 line-clamp-2 leading-relaxed">
-              {truncateText(article.summary || article.content || "", 120)}
+              {cleanAndTruncate(article.summary || article.content || "", 140)}
             </p>
 
             {/* Tags -> use categories preview; reserve fixed height to align cards */}

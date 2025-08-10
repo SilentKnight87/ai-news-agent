@@ -433,10 +433,10 @@ async def setup_default_tasks() -> None:
 
     # Task 2: Daily digest generation
     async def generate_daily_digest():
-        """Generate daily digest and audio."""
+        """Generate daily digest and queue audio generation."""
         try:
             from ..agents.digest_agent import get_digest_agent
-            from ..services.tts import get_tts_service
+            from ..services.audio_queue import get_audio_queue
 
             # Get articles from last 24 hours
             articles = await article_repo.get_top_articles_for_digest(
@@ -454,16 +454,21 @@ async def setup_default_tasks() -> None:
             digest_date = datetime.now(UTC)
             digest = await digest_agent.generate_digest(articles, digest_date)
 
-            # Generate audio if TTS is configured
-            if settings.elevenlabs_api_key:
+            # Save digest to database (this would be done in the repository)
+            # For now, let's assume digest has an ID after saving
+            
+            # Queue audio generation if TTS is configured
+            if settings.elevenlabs_api_key and hasattr(digest, 'id'):
                 try:
-                    tts_service = get_tts_service()
-                    audio_result = await tts_service.generate_digest_audio(
-                        digest.summary_text
+                    audio_queue = get_audio_queue()
+                    await audio_queue.queue_audio_generation(
+                        digest_id=str(digest.id),
+                        text=digest.summary_text,
+                        voice_type="news"
                     )
-                    logger.info(f"Generated digest audio: {audio_result.audio_file_path}")
+                    logger.info(f"Queued audio generation for digest: {digest.id}")
                 except Exception as e:
-                    logger.warning(f"TTS generation failed: {e}")
+                    logger.warning(f"Failed to queue audio generation: {e}")
 
             logger.info(f"Generated daily digest with {len(digest.top_articles)} articles")
 
@@ -476,8 +481,35 @@ async def setup_default_tasks() -> None:
         func=generate_daily_digest,
         daily_at_hour=settings.digest_hour_utc
     )
+    
+    # Task 3: Process audio queue (every minute)
+    from ..tasks.audio_tasks import process_audio_queue
+    
+    scheduler.add_task(
+        name="process_audio_queue",
+        func=process_audio_queue,
+        interval_minutes=1
+    )
+    
+    # Task 4: Clean up old audio files (daily)
+    from ..tasks.audio_tasks import cleanup_old_audio
+    
+    scheduler.add_task(
+        name="cleanup_audio",
+        func=cleanup_old_audio,
+        daily_at_hour=3  # Run at 3 AM UTC
+    )
+    
+    # Task 5: Retry failed audio tasks (hourly)
+    from ..tasks.audio_tasks import retry_failed_audio
+    
+    scheduler.add_task(
+        name="retry_failed_audio",
+        func=retry_failed_audio,
+        interval_minutes=60
+    )
 
-    logger.info("Default scheduled tasks configured")
+    logger.info("Default scheduled tasks configured with audio processing")
 
 
 async def start_scheduler() -> None:

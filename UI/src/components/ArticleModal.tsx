@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState, useRef } from "react"
-import { X, ExternalLink, RefreshCw, Share2, Bookmark, TrendingUp, Clock, User } from "lucide-react"
+import { X, ExternalLink, Share2, TrendingUp, Clock, User } from "lucide-react"
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion"
 import { Article } from "@/types"
 import { cn, formatTimeAgo, getRelevanceColor, getSourceIcon } from "@/lib/utils"
@@ -10,12 +10,10 @@ interface ArticleModalProps {
   article: Article | null
   isOpen: boolean
   onClose: () => void
-  onReanalyze?: (id: string) => void
 }
 
-export default function ArticleModal({ article, isOpen, onClose, onReanalyze }: ArticleModalProps) {
+export default function ArticleModal({ article, isOpen, onClose }: ArticleModalProps) {
   const reduce = useReducedMotion()
-  const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [activeTab, setActiveTab] = useState<"summary" | "analysis" | "related">("summary")
   const modalRef = useRef<HTMLDivElement>(null)
   const previousFocusRef = useRef<HTMLElement | null>(null)
@@ -56,13 +54,6 @@ export default function ArticleModal({ article, isOpen, onClose, onReanalyze }: 
   }, [isOpen, onClose])
 
   if (!article) return null
-
-  const handleReanalyze = async () => {
-    if (!onReanalyze) return
-    setIsAnalyzing(true)
-    await onReanalyze(article.id)
-    setIsAnalyzing(false)
-  }
 
   const handleShare = async () => {
     if (navigator.share) {
@@ -298,22 +289,6 @@ export default function ArticleModal({ article, isOpen, onClose, onReanalyze }: 
                     >
                       <Share2 className="w-5 h-5 text-gray-400 hover:text-white" />
                     </button>
-                    <button
-                      className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
-                      aria-label="Bookmark"
-                    >
-                      <Bookmark className="w-5 h-5 text-gray-400 hover:text-white" />
-                    </button>
-                    {onReanalyze && (
-                      <button
-                        onClick={handleReanalyze}
-                        disabled={isAnalyzing}
-                        className="flex items-center space-x-2 px-4 py-2 hover:bg-gray-800 rounded-lg transition-colors disabled:opacity-50"
-                      >
-                        <RefreshCw className={cn("w-4 h-4 text-gray-400", isAnalyzing && "animate-spin")} />
-                        <span className="text-sm text-gray-400">Re-analyze</span>
-                      </button>
-                    )}
                   </div>
                   <a
                     href={article.url}

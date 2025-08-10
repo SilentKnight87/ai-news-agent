@@ -3,14 +3,15 @@ import { api } from '@/lib/api'
 import { ArticleFilters } from '@/types'
 
 export function useArticles(source?: string, filters?: ArticleFilters) {
-  const key = source 
-    ? ['articles', source, filters] 
+  const key = source
+    ? ['articles', source, filters]
     : ['articles', filters]
     
-  return useSWR(key, () => 
-    api.articles.list({ 
-      source, 
-      ...filters 
+  // Use back-compat helper that adapts to new paginated API
+  return useSWR(key, () =>
+    api.articles.listSimple({
+      source,
+      ...filters
     })
   )
 }
@@ -23,7 +24,7 @@ export function useArticle(id: string) {
 }
 
 export function useDigest() {
-  return useSWR('digest', api.digest.latest, {
+  return useSWR('digest', api.digests.latest, {
     refreshInterval: 60000, // Refresh every minute
   })
 }

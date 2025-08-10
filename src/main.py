@@ -127,6 +127,10 @@ def create_app() -> FastAPI:
 
     # Include API routes
     app.include_router(router, prefix="/api/v1")
+    
+    # Include audio routes
+    from .api.audio import router as audio_router
+    app.include_router(audio_router, prefix="/api/v1")
 
     # Root endpoint
     @app.get("/")
