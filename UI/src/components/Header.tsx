@@ -5,6 +5,7 @@ import Link from "next/link"
 import { Search, Menu, X, RefreshCw, Settings, ChevronDown } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
+import SearchBar from "@/components/SearchBar"
 
 const sources = [
   { id: "all", label: "All", icon: "🌐" },
@@ -114,33 +115,15 @@ export default function Header() {
             {/* Search Bar - Animated Expansion */}
             <AnimatePresence>
               {isSearchOpen ? (
-                <motion.form
+                <motion.div
                   initial={{ width: 0, opacity: 0 }}
                   animate={{ width: 320, opacity: 1 }}
                   exit={{ width: 0, opacity: 0 }}
                   transition={{ duration: 0.3, ease: "easeOut" }}
-                  onSubmit={handleSearch}
-                  className="relative hidden sm:block"
+                  className="hidden sm:block"
                 >
-                  <div className="relative">
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Search AI news..."
-                      className="w-full h-10 px-12 bg-gray-900/80 backdrop-blur-sm border border-gray-700 rounded-xl text-sm text-white placeholder-gray-500 focus:outline-none focus:border-gray-500 focus:bg-gray-900 transition-all"
-                      autoFocus
-                    />
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                    <button
-                      type="button"
-                      onClick={() => setIsSearchOpen(false)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 hover:bg-gray-800 rounded-lg transition-colors"
-                    >
-                      <X className="w-3.5 h-3.5 text-gray-400" />
-                    </button>
-                  </div>
-                </motion.form>
+                  <SearchBar onClose={() => setIsSearchOpen(false)} />
+                </motion.div>
               ) : (
                 <motion.button
                   whileHover={{ scale: 1.05 }}

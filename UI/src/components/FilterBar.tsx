@@ -15,6 +15,12 @@ export interface FilterState {
   timeRange: string
   sortBy: "date" | "relevance"
   order: "asc" | "desc"
+  // Extended filters
+  startDate?: string         // ISO yyyy-mm-dd
+  endDate?: string           // ISO yyyy-mm-dd
+  relevanceMax?: number
+  sources?: string[]         // source ids
+  categories?: string[]      // category tags
 }
 
 const timeRanges = [
@@ -25,12 +31,27 @@ const timeRanges = [
   { value: "30d", label: "Last 30 Days" },
 ]
 
+const sourceOptions = [
+  { value: "arxiv", label: "ArXiv" },
+  { value: "hackernews", label: "Hacker News" },
+  { value: "rss", label: "RSS" },
+  { value: "youtube", label: "YouTube" },
+  { value: "huggingface", label: "HuggingFace" },
+  { value: "reddit", label: "Reddit" },
+  { value: "github", label: "GitHub" },
+]
+
 export default function FilterBar({ onFilterChange, className }: FilterBarProps) {
   const [filters, setFilters] = useState<FilterState>({
     relevance: 0,
     timeRange: "all",
     sortBy: "date",
     order: "desc",
+    startDate: undefined,
+    endDate: undefined,
+    relevanceMax: undefined,
+    sources: [],
+    categories: [],
   })
   const [showAdvanced, setShowAdvanced] = useState(false)
 
@@ -46,10 +67,28 @@ export default function FilterBar({ onFilterChange, className }: FilterBarProps)
       timeRange: "all",
       sortBy: "date",
       order: "desc",
+      startDate: undefined,
+      endDate: undefined,
+      relevanceMax: undefined,
+      sources: [],
+      categories: [],
     }
     setFilters(defaultFilters)
     onFilterChange(defaultFilters)
   }
+
+  const activeCount = (() => {
+    let count = 0
+    if (filters.relevance > 0) count++
+    if (filters.timeRange !== "all") count++
+    if (filters.sortBy !== "date" || filters.order !== "desc") count++
+    if (filters.startDate) count++
+    if (filters.endDate) count++
+    if (typeof filters.relevanceMax === "number") count++
+    if (filters.sources && filters.sources.length > 0) count++
+    if (filters.categories && filters.categories.length > 0) count++
+    return count
+  })()
 
   return (
     <div className={cn("bg-gray-900/50 backdrop-blur-sm border-y border-gray-800", className)}>
@@ -132,6 +171,11 @@ export default function FilterBar({ onFilterChange, className }: FilterBarProps)
             >
               <Sliders className="w-4 h-4" />
               <span>Advanced</span>
+              {activeCount > 0 && (
+                <span className="ml-1 inline-flex items-center justify-center px-2 py-0.5 text-xs rounded-full bg-gray-800 text-gray-300 border border-gray-700">
+                  {activeCount}
+                </span>
+              )}
             </button>
             <button
               onClick={resetFilters}
@@ -153,45 +197,81 @@ export default function FilterBar({ onFilterChange, className }: FilterBarProps)
               className="mt-4 pt-4 border-t border-gray-800 overflow-hidden"
             >
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {/* Category Filter */}
+                {/* Date Range */}
                 <div>
-                  <label className="block text-sm text-gray-400 mb-2">Category</label>
-                  <select className="w-full bg-gray-800 text-gray-300 text-sm rounded-lg px-3 py-2 border border-gray-700 focus:outline-none focus:border-gray-500 transition-colors">
-                    <option value="">All Categories</option>
-                    <option value="machine-learning">Machine Learning</option>
-                    <option value="nlp">Natural Language Processing</option>
-                    <option value="computer-vision">Computer Vision</option>
-                    <option value="robotics">Robotics</option>
+                  <label className="block text-sm text-gray-400 mb-2">Start Date</label>
+                  <input
+                    type="date"
+                    value={filters.startDate || ""}
+                    onChange={(e) => updateFilter("startDate", e.target.value || undefined)}
+                    className="w-full bg-gray-800 text-gray-300 text-sm rounded-lg px-3 py-2 border border-gray-700 focus:outline-none focus:border-gray-500 transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-2">End Date</label>
+                  <input
+                    type="date"
+                    value={filters.endDate || ""}
+                    onChange={(e) => updateFilter("endDate", e.target.value || undefined)}
+                    className="w-full bg-gray-800 text-gray-300 text-sm rounded-lg px-3 py-2 border border-gray-700 focus:outline-none focus:border-gray-500 transition-colors"
+                  />
+                </div>
+
+                {/* Relevance Max */}
+                <div>
+                  <label className="block text-sm text-gray-400 mb-2">Relevance Max</label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    value={typeof filters.relevanceMax === "number" ? filters.relevanceMax : ""}
+                    onChange={(e) => {
+                      const val = e.target.value
+                      updateFilter("relevanceMax", val === "" ? undefined : Math.max(0, Math.min(100, parseInt(val))))
+                    }}
+                    placeholder="100"
+                    className="w-full bg-gray-800 text-gray-300 text-sm rounded-lg px-3 py-2 border border-gray-700 focus:outline-none focus:border-gray-500 transition-colors"
+                  />
+                </div>
+
+                {/* Sources Multi-select */}
+                <div>
+                  <label className="block text-sm text-gray-400 mb-2">Sources</label>
+                  <select
+                    multiple
+                    value={filters.sources || []}
+                    onChange={(e) =>
+                      updateFilter(
+                        "sources",
+                        Array.from(e.target.selectedOptions).map((o) => o.value)
+                      )
+                    }
+                    className="w-full bg-gray-800 text-gray-300 text-sm rounded-lg px-3 py-2 border border-gray-700 focus:outline-none focus:border-gray-500 transition-colors min-h-[84px]"
+                  >
+                    {sourceOptions.map((s) => (
+                      <option key={s.value} value={s.value}>
+                        {s.label}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
-                {/* Author Filter */}
-                <div>
-                  <label className="block text-sm text-gray-400 mb-2">Author</label>
+                {/* Categories (comma-separated) */}
+                <div className="sm:col-span-2 lg:col-span-2">
+                  <label className="block text-sm text-gray-400 mb-2">Categories</label>
                   <input
                     type="text"
-                    placeholder="Filter by author..."
-                    className="w-full bg-gray-800 text-gray-300 text-sm rounded-lg px-3 py-2 border border-gray-700 focus:outline-none focus:border-gray-500 transition-colors placeholder-gray-500"
-                  />
-                </div>
-
-                {/* Min Articles */}
-                <div>
-                  <label className="block text-sm text-gray-400 mb-2">Min Articles</label>
-                  <input
-                    type="number"
-                    placeholder="0"
-                    min="0"
-                    className="w-full bg-gray-800 text-gray-300 text-sm rounded-lg px-3 py-2 border border-gray-700 focus:outline-none focus:border-gray-500 transition-colors placeholder-gray-500"
-                  />
-                </div>
-
-                {/* Keywords */}
-                <div>
-                  <label className="block text-sm text-gray-400 mb-2">Keywords</label>
-                  <input
-                    type="text"
-                    placeholder="Enter keywords..."
+                    value={(filters.categories || []).join(", ")}
+                    onChange={(e) =>
+                      updateFilter(
+                        "categories",
+                        e.target.value
+                          .split(",")
+                          .map((c) => c.trim())
+                          .filter(Boolean)
+                      )
+                    }
+                    placeholder="e.g., machine-learning, nlp, computer-vision"
                     className="w-full bg-gray-800 text-gray-300 text-sm rounded-lg px-3 py-2 border border-gray-700 focus:outline-none focus:border-gray-500 transition-colors placeholder-gray-500"
                   />
                 </div>

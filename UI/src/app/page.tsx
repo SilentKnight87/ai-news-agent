@@ -66,18 +66,6 @@ export default function Home() {
     setTimeout(() => setSelectedArticle(null), 300)
   }
 
-  const handleReanalyze = async (id: string) => {
-    try {
-      await api.articles.analyze(id)
-      // Refresh the article data
-      if (selectedArticle?.source) {
-        sourceData[selectedArticle.source as keyof typeof sourceData]?.mutate()
-      }
-    } catch (error) {
-      console.error("Failed to reanalyze article:", error)
-    }
-  }
-
   const handleRefresh = () => {
     // Refresh all data
     Object.values(sourceData).forEach(source => source?.mutate?.())
@@ -175,7 +163,6 @@ export default function Home() {
         article={selectedArticle}
         isOpen={isModalOpen}
         onClose={handleCloseModal}
-        onReanalyze={handleReanalyze}
       />
     </div>
   )

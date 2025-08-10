@@ -5,6 +5,7 @@ This module implements an AI agent that creates coherent daily summaries
 from multiple articles, identifying key themes and notable developments.
 """
 
+import asyncio
 import logging
 from datetime import datetime
 
@@ -87,6 +88,20 @@ class DigestAgent:
             )
 
             logger.info(f"Generated digest with {len(digest.key_themes)} themes")
+            
+            # Queue audio generation (non-blocking)
+            try:
+                from ..services.audio_queue import get_audio_queue
+                audio_queue = get_audio_queue()
+                
+                # Note: digest.id needs to be set after saving to database
+                # This will be done in the repository layer
+                # For now, we'll add a flag to indicate audio should be generated
+                digest._generate_audio = True
+                
+            except Exception as e:
+                logger.warning(f"Could not queue audio generation: {e}")
+            
             return digest
 
         except Exception as e:

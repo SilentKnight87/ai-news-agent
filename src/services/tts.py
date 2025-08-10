@@ -12,6 +12,7 @@ from pathlib import Path
 
 import aiofiles
 import httpx
+from elevenlabs import AsyncElevenLabs
 from pydantic import BaseModel, Field
 
 from ..config import get_settings
@@ -76,6 +77,21 @@ class TTSService:
             "Accept": "audio/mpeg",
             "Content-Type": "application/json",
             "xi-api-key": self.settings.elevenlabs_api_key or ""
+        }
+
+        # Initialize async client for async operations
+        if self.settings.elevenlabs_api_key:
+            self.async_client = AsyncElevenLabs(
+                api_key=self.settings.elevenlabs_api_key
+            )
+        else:
+            self.async_client = None
+
+        # Voice profiles for variety
+        self.voice_profiles = {
+            "news": "21m00Tcm4TlvDq8ikWAM",      # Rachel - professional
+            "technical": "AZnzlk1XvdvUeBnXmlld",  # Adam - clear technical
+            "community": "EXAVITQu4vr4xnSDxMaL"   # Bella - friendly
         }
 
         logger.info(f"TTS service initialized with output dir: {self.output_dir}")
@@ -227,12 +243,88 @@ class TTSService:
             logger.error(f"TTS generation failed: {e}")
             raise
 
-    async def generate_digest_audio(self, digest_text: str) -> TTSResult:
+    async def generate_speech_async(
+        self,
+        text: str,
+        voice_type: str = "news",
+        use_cache: bool = True
+    ) -> TTSResult:
+        """
+        Async version of speech generation using ElevenLabs async client.
+        
+        Args:
+            text: Text to convert to speech.
+            voice_type: Voice profile to use.
+            use_cache: Whether to use cached results.
+            
+        Returns:
+            TTSResult: Generated audio result.
+        """
+        if not self.async_client:
+            # Fall back to regular method if no async client
+            return await self.generate_speech(text, voice_id=self.voice_profiles.get(voice_type), use_cache=use_cache)
+
+        # Check cache first
+        if use_cache:
+            cached_result = await self.get_cached_result(text)
+            if cached_result:
+                logger.info(f"Using cached TTS result for text hash: {cached_result.text_hash}")
+                return cached_result
+
+        start_time = asyncio.get_event_loop().time()
+        text_hash = self._generate_text_hash(text)
+
+        try:
+            logger.info(f"Generating async TTS for text hash: {text_hash}")
+
+            # Rate limit
+            await self.rate_limiter.wait_and_acquire("elevenlabs", tokens=1)
+
+            # Get voice ID
+            voice_id = self.voice_profiles.get(voice_type, self.voice_profiles["news"])
+
+            # Generate audio using async client
+            audio = await self.async_client.text_to_speech.convert(
+                text=text,
+                voice_id=voice_id,
+                model_id="eleven_multilingual_v2",
+                output_format="mp3_44100_64"  # Lower bitrate for web
+            )
+
+            # Convert audio generator to bytes
+            audio_bytes = b"".join([chunk async for chunk in audio])
+
+            # Save to file
+            cache_path = self._get_cache_path(text_hash)
+            async with aiofiles.open(cache_path, 'wb') as f:
+                await f.write(audio_bytes)
+
+            generation_time = asyncio.get_event_loop().time() - start_time
+            file_size = len(audio_bytes)
+
+            logger.info(
+                f"Async TTS generated successfully: {file_size} bytes in {generation_time:.2f}s"
+            )
+
+            return TTSResult(
+                text_hash=text_hash,
+                audio_file_path=str(cache_path),
+                file_size_bytes=file_size,
+                generation_time_seconds=generation_time
+            )
+
+        except Exception as e:
+            logger.error(f"Async TTS generation failed: {e}")
+            # Fall back to sync method
+            return await self.generate_speech(text, voice_id=self.voice_profiles.get(voice_type), use_cache=use_cache)
+
+    async def generate_digest_audio(self, digest_text: str, voice_type: str = "news") -> TTSResult:
         """
         Generate audio for a daily digest with optimizations.
         
         Args:
             digest_text: Digest text to convert.
+            voice_type: Voice profile to use.
             
         Returns:
             TTSResult: Generated audio result.
@@ -252,7 +344,11 @@ class TTSService:
         That's all for today's AI developments. Stay curious!
         """
 
-        return await self.generate_speech(enhanced_text.strip())
+        # Use async method if available
+        if self.async_client:
+            return await self.generate_speech_async(enhanced_text.strip(), voice_type=voice_type)
+        else:
+            return await self.generate_speech(enhanced_text.strip())
 
     async def list_available_voices(self) -> list[dict]:
         """
