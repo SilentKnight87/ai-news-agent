@@ -480,6 +480,454 @@ class ArticleRepository:
             logger.error(f"Failed to get article stats: {e}")
             return {"error": "Failed to retrieve statistics"}
 
+    async def search_articles(
+        self,
+        query: str,
+        source: ArticleSource | None = None,
+        limit: int = 20,
+        offset: int = 0
+    ) -> tuple[list[Article], int]:
+        """
+        Full-text search across article titles and content.
+        
+        Args:
+            query: Search query text.
+            source: Optional source filter.
+            limit: Number of results.
+            offset: Pagination offset.
+            
+        Returns:
+            Tuple of (articles, total_count).
+        """
+        try:
+            # Use RPC function for full-text search if available
+            # Otherwise fall back to basic filtering
+            params = {
+                "query_text": query,
+                "max_results": limit,
+                "skip_results": offset
+            }
+            
+            if source:
+                params["source_filter"] = source.value
+                
+            # Try to use RPC function if it exists
+            try:
+                response = self.supabase.rpc("search_articles_fulltext", params).execute()
+                
+                articles = []
+                total = 0
+                
+                for item in response.data:
+                    article = self._db_dict_to_article(item)
+                    articles.append(article)
+                    if item.get("total_count"):
+                        total = int(item["total_count"])
+                        
+                return articles, total
+                
+            except Exception:
+                # Fallback to basic search using ilike
+                logger.debug("Full-text search function not available, using fallback")
+                
+                # Build query with basic text matching
+                search_pattern = f"%{query}%"
+                
+                # Get total count first
+                count_query = self.supabase.table("articles").select("id", count="exact")
+                count_query = count_query.or_(f"title.ilike.{search_pattern},content.ilike.{search_pattern}")
+                
+                if source:
+                    count_query = count_query.eq("source", source.value)
+                    
+                count_response = count_query.execute()
+                total = count_response.count or 0
+                
+                # Get paginated results
+                query_builder = self.supabase.table("articles").select("*")
+                query_builder = query_builder.or_(f"title.ilike.{search_pattern},content.ilike.{search_pattern}")
+                
+                if source:
+                    query_builder = query_builder.eq("source", source.value)
+                    
+                query_builder = query_builder.order("published_at", desc=True)
+                query_builder = query_builder.range(offset, offset + limit - 1)
+                
+                response = query_builder.execute()
+                
+                articles = [self._db_dict_to_article(item) for item in response.data]
+                
+                return articles, total
+                
+        except Exception as e:
+            logger.error(f"Search failed for query '{query}': {e}")
+            return [], 0
+            
+    async def filter_articles(
+        self,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
+        relevance_min: int | None = None,
+        relevance_max: int | None = None,
+        sources: list[ArticleSource] | None = None,
+        categories: list[str] | None = None,
+        limit: int = 20,
+        offset: int = 0
+    ) -> tuple[list[Article], int]:
+        """
+        Advanced filtering with multiple criteria.
+        
+        Args:
+            start_date: Filter articles after this date.
+            end_date: Filter articles before this date.
+            relevance_min: Minimum relevance score.
+            relevance_max: Maximum relevance score.
+            sources: List of sources to include.
+            categories: List of categories to filter by.
+            limit: Number of results.
+            offset: Pagination offset.
+            
+        Returns:
+            Tuple of (articles, total_count).
+        """
+        try:
+            # Build count query
+            count_query = self.supabase.table("articles").select("id", count="exact")
+            
+            # Apply filters
+            if start_date:
+                count_query = count_query.gte("published_at", start_date.isoformat())
+            if end_date:
+                count_query = count_query.lte("published_at", end_date.isoformat())
+            if relevance_min is not None:
+                count_query = count_query.gte("relevance_score", relevance_min)
+            if relevance_max is not None:
+                count_query = count_query.lte("relevance_score", relevance_max)
+            if sources:
+                source_values = [s.value for s in sources]
+                count_query = count_query.in_("source", source_values)
+            if categories:
+                # For array contains, we need to use contains
+                for category in categories:
+                    count_query = count_query.contains("categories", [category])
+                    
+            count_query = count_query.eq("is_duplicate", False)
+            count_response = count_query.execute()
+            total = count_response.count or 0
+            
+            # Build data query with same filters
+            data_query = self.supabase.table("articles").select("*")
+            
+            if start_date:
+                data_query = data_query.gte("published_at", start_date.isoformat())
+            if end_date:
+                data_query = data_query.lte("published_at", end_date.isoformat())
+            if relevance_min is not None:
+                data_query = data_query.gte("relevance_score", relevance_min)
+            if relevance_max is not None:
+                data_query = data_query.lte("relevance_score", relevance_max)
+            if sources:
+                source_values = [s.value for s in sources]
+                data_query = data_query.in_("source", source_values)
+            if categories:
+                for category in categories:
+                    data_query = data_query.contains("categories", [category])
+                    
+            data_query = data_query.eq("is_duplicate", False)
+            data_query = data_query.order("published_at", desc=True)
+            data_query = data_query.range(offset, offset + limit - 1)
+            
+            response = data_query.execute()
+            
+            articles = [self._db_dict_to_article(item) for item in response.data]
+            
+            return articles, total
+            
+        except Exception as e:
+            logger.error(f"Filter articles failed: {e}")
+            return [], 0
+            
+    async def get_articles_paginated(
+        self,
+        page: int = 1,
+        per_page: int = 20,
+        sort_by: str = "published_at",
+        order: str = "desc",
+        source: ArticleSource | None = None
+    ) -> tuple[list[Article], int]:
+        """
+        Get paginated articles with enhanced pagination metadata.
+        
+        Args:
+            page: Page number (1-indexed).
+            per_page: Items per page.
+            sort_by: Field to sort by.
+            order: Sort order (asc/desc).
+            source: Optional source filter.
+            
+        Returns:
+            Tuple of (articles, total_count).
+        """
+        try:
+            # Calculate offset from page number
+            offset = (page - 1) * per_page
+            
+            # Build count query
+            count_query = self.supabase.table("articles").select("id", count="exact")
+            count_query = count_query.eq("is_duplicate", False)
+            
+            if source:
+                count_query = count_query.eq("source", source.value)
+                
+            count_response = count_query.execute()
+            total = count_response.count or 0
+            
+            # Build data query
+            data_query = self.supabase.table("articles").select("*")
+            data_query = data_query.eq("is_duplicate", False)
+            
+            if source:
+                data_query = data_query.eq("source", source.value)
+                
+            # Apply sorting
+            desc_order = order.lower() == "desc"
+            data_query = data_query.order(sort_by, desc=desc_order)
+            data_query = data_query.range(offset, offset + per_page - 1)
+            
+            response = data_query.execute()
+            
+            articles = [self._db_dict_to_article(item) for item in response.data]
+            
+            return articles, total
+            
+        except Exception as e:
+            logger.error(f"Get paginated articles failed: {e}")
+            return [], 0
+            
+    async def get_sources_metadata(self) -> list[dict]:
+        """
+        Get metadata about all sources including article counts.
+        
+        Returns:
+            List of source metadata dictionaries.
+        """
+        try:
+            # Try to use RPC function if available
+            try:
+                response = self.supabase.rpc("get_sources_metadata").execute()
+                
+                # Enhance with display names and descriptions
+                sources_info = []
+                for item in response.data:
+                    source_enum = ArticleSource(item["source_name"])
+                    sources_info.append({
+                        "name": source_enum.value,
+                        "display_name": self._get_source_display_name(source_enum),
+                        "description": self._get_source_description(source_enum),
+                        "article_count": item["article_count"],
+                        "last_published": item.get("last_published"),
+                        "avg_relevance_score": float(item.get("avg_relevance_score", 0)),
+                        "status": "active",
+                        "icon_url": f"/icons/{source_enum.value}.svg"
+                    })
+                    
+                return sources_info
+                
+            except Exception:
+                # Fallback to manual aggregation
+                logger.debug("Sources metadata function not available, using fallback")
+                
+                sources_info = []
+                for source in ArticleSource:
+                    # Get count for this source
+                    count_response = self.supabase.table("articles").select(
+                        "id, published_at, relevance_score", count="exact"
+                    ).eq("source", source.value).eq("is_duplicate", False).execute()
+                    
+                    # Get last published date and avg relevance
+                    if count_response.data:
+                        articles_data = count_response.data
+                        last_published = max(
+                            (a["published_at"] for a in articles_data),
+                            default=None
+                        )
+                        avg_relevance = sum(
+                            a.get("relevance_score", 0) for a in articles_data if a.get("relevance_score")
+                        ) / len(articles_data) if articles_data else 0
+                    else:
+                        last_published = None
+                        avg_relevance = 0
+                        
+                    sources_info.append({
+                        "name": source.value,
+                        "display_name": self._get_source_display_name(source),
+                        "description": self._get_source_description(source),
+                        "article_count": count_response.count or 0,
+                        "last_published": last_published,
+                        "avg_relevance_score": round(avg_relevance, 2),
+                        "status": "active",
+                        "icon_url": f"/icons/{source.value}.svg"
+                    })
+                    
+                return sources_info
+                
+        except Exception as e:
+            logger.error(f"Get sources metadata failed: {e}")
+            return []
+            
+    async def get_digests(
+        self,
+        page: int = 1,
+        per_page: int = 10
+    ) -> tuple[list[dict], int]:
+        """
+        Get paginated list of daily digests.
+        
+        Args:
+            page: Page number (1-indexed).
+            per_page: Items per page.
+            
+        Returns:
+            Tuple of (digests, total_count).
+        """
+        try:
+            # Calculate offset
+            offset = (page - 1) * per_page
+            
+            # Get total count
+            count_response = self.supabase.table("daily_digests").select(
+                "id", count="exact"
+            ).execute()
+            total = count_response.count or 0
+            
+            # Get paginated digests
+            response = self.supabase.table("daily_digests").select(
+                "*, digest_articles(article_id)"
+            ).order("digest_date", desc=True).range(
+                offset, offset + per_page - 1
+            ).execute()
+            
+            digests = []
+            for digest_data in response.data:
+                # Count articles in this digest
+                article_count = len(digest_data.get("digest_articles", []))
+                
+                # Extract key developments from summary
+                summary = digest_data["summary_text"]
+                key_developments = self._extract_key_developments(summary)
+                
+                digests.append({
+                    "id": digest_data["id"],
+                    "date": digest_data["digest_date"],
+                    "title": f"AI Daily: {digest_data['digest_date']}",
+                    "summary": summary,
+                    "key_developments": key_developments,
+                    "article_count": article_count,
+                    "audio_url": digest_data.get("audio_url"),
+                    "audio_duration": None,  # Would need to be stored or calculated
+                    "created_at": digest_data["created_at"]
+                })
+                
+            return digests, total
+            
+        except Exception as e:
+            logger.error(f"Get digests failed: {e}")
+            return [], 0
+            
+    async def get_digest_by_id(self, digest_id: UUID) -> dict | None:
+        """
+        Get a single digest with all its articles.
+        
+        Args:
+            digest_id: Digest ID.
+            
+        Returns:
+            Digest dictionary with articles, or None if not found.
+        """
+        try:
+            # Get digest with related articles
+            response = self.supabase.table("daily_digests").select(
+                "*, digest_articles(article_id)"
+            ).eq("id", str(digest_id)).single().execute()
+            
+            if not response.data:
+                return None
+                
+            digest_data = response.data
+            
+            # Get full article details for this digest
+            article_ids = [item["article_id"] for item in digest_data.get("digest_articles", [])]
+            
+            articles = []
+            if article_ids:
+                articles_response = self.supabase.table("articles").select(
+                    "id, title, summary, source, url, relevance_score"
+                ).in_("id", article_ids).execute()
+                
+                articles = articles_response.data
+                
+            # Extract key developments
+            key_developments = self._extract_key_developments(digest_data["summary_text"])
+            
+            return {
+                "id": digest_data["id"],
+                "date": digest_data["digest_date"],
+                "title": f"AI Daily: {digest_data['digest_date']}",
+                "summary": digest_data["summary_text"],
+                "key_developments": key_developments,
+                "articles": articles,
+                "audio_url": digest_data.get("audio_url"),
+                "audio_duration": None,
+                "created_at": digest_data["created_at"],
+                "updated_at": digest_data.get("updated_at", digest_data["created_at"])
+            }
+            
+        except Exception as e:
+            logger.error(f"Get digest by ID failed: {e}")
+            return None
+            
+    def _get_source_display_name(self, source: ArticleSource) -> str:
+        """Get display name for a source."""
+        display_names = {
+            ArticleSource.ARXIV: "ArXiv",
+            ArticleSource.HACKERNEWS: "Hacker News",
+            ArticleSource.RSS: "RSS Feeds",
+            ArticleSource.YOUTUBE: "YouTube",
+            ArticleSource.REDDIT: "Reddit",
+            ArticleSource.GITHUB: "GitHub",
+            ArticleSource.HUGGINGFACE: "Hugging Face"
+        }
+        return display_names.get(source, source.value.title())
+        
+    def _get_source_description(self, source: ArticleSource) -> str:
+        """Get description for a source."""
+        descriptions = {
+            ArticleSource.ARXIV: "Academic papers and preprints",
+            ArticleSource.HACKERNEWS: "Technology and startup news",
+            ArticleSource.RSS: "Curated RSS feed articles",
+            ArticleSource.YOUTUBE: "Video content and tutorials",
+            ArticleSource.REDDIT: "Community discussions",
+            ArticleSource.GITHUB: "Open source projects and releases",
+            ArticleSource.HUGGINGFACE: "ML models and datasets"
+        }
+        return descriptions.get(source, "Content aggregation source")
+        
+    def _extract_key_developments(self, summary: str, max_points: int = 3) -> list[str]:
+        """Extract key developments from a summary text."""
+        # Simple extraction - split by sentences and take first few
+        # In production, this could use AI or more sophisticated parsing
+        sentences = summary.split(". ")
+        key_points = []
+        
+        for sentence in sentences[:max_points]:
+            if len(sentence) > 20:  # Filter out very short sentences
+                clean_sentence = sentence.strip()
+                if not clean_sentence.endswith("."):
+                    clean_sentence += "."
+                key_points.append(clean_sentence)
+                
+        return key_points if key_points else ["Daily AI news summary"]
+
     def _article_to_db_dict(self, article: Article) -> dict:
         """
         Convert Article model to database dictionary.

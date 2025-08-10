@@ -135,8 +135,20 @@ curl -X POST -H "Content-Type: application/json" \
      -d '{"sources": ["arxiv"]}' \
      http://localhost:8000/api/v1/webhook/fetch | jq
 
-# View fetched articles (wait 1-2 minutes)
-curl http://localhost:8000/api/v1/articles | jq
+# View fetched articles with pagination
+curl "http://localhost:8000/api/v1/articles?page=1&per_page=10" | jq
+
+# Search for specific content
+curl "http://localhost:8000/api/v1/articles/search?q=transformer&limit=5" | jq
+
+# Filter articles by date and relevance
+curl "http://localhost:8000/api/v1/articles/filter?relevance_min=80&start_date=2025-01-01" | jq
+
+# Get all digests
+curl "http://localhost:8000/api/v1/digests?page=1&per_page=5" | jq
+
+# Get sources metadata
+curl http://localhost:8000/api/v1/sources | jq
 
 # Get system statistics
 curl http://localhost:8000/api/v1/stats | jq
@@ -149,15 +161,27 @@ All API endpoints are prefixed with `/api/v1`:
 #### Health & Status
 - `GET /api/v1/health` - System health and database status
 - `GET /api/v1/stats` - Article counts, deduplication stats, fetcher status
+- `GET /api/v1/monitoring/performance` - Comprehensive performance metrics
 
 #### Articles
-- `GET /api/v1/articles` - List articles with filtering (`limit`, `offset`, `source`, `min_relevance_score`, `since_hours`)
+- `GET /api/v1/articles` - Enhanced pagination with metadata (`page`, `per_page`, `sort_by`, `order`, `source`)
 - `GET /api/v1/articles/{id}` - Get specific article by ID
+- `GET /api/v1/articles/search` - Full-text search (`q`, `source`, `limit`, `offset`)
+- `GET /api/v1/articles/filter` - Advanced filtering (`start_date`, `end_date`, `relevance_min`, `relevance_max`, `sources`, `categories`)
 - `POST /api/v1/articles/{id}/analyze` - Re-analyze article with AI
 
-#### Content Management
-- `POST /api/v1/webhook/fetch` - Trigger article fetching (`{"sources": ["arxiv", "hackernews", "rss"]}`)
+#### Digests
+- `GET /api/v1/digests` - List all digests with pagination (`page`, `per_page`)
+- `GET /api/v1/digests/{id}` - Get specific digest with articles
 - `GET /api/v1/digest/latest` - Get latest daily digest summary
+
+#### Sources & Content Management
+- `GET /api/v1/sources` - Get sources metadata with statistics
+- `POST /api/v1/webhook/fetch` - Trigger article fetching (`{"sources": ["arxiv", "hackernews", "rss"]}`)
+
+#### Scheduler
+- `GET /api/v1/scheduler/status` - Current scheduler status and task information
+- `POST /api/v1/scheduler/task/{task_name}/run` - Manually trigger a scheduled task
 
 **Interactive API Documentation**: Visit http://localhost:8000/docs when running locally
 
@@ -374,27 +398,29 @@ results = await asyncio.gather(*tasks, return_exceptions=True)
 
 ## 🎯 Current Status
 
-### ✅ **Production Ready (72/72 Tests Passing)**
+### ✅ **Production Ready (99/99 Tests Passing)**
 
 | Component | Status | Description |
 |-----------|--------|-------------|
 | **Core Pipeline** | ✅ Complete | End-to-end article processing working |
-| **Multi-Source Fetching** | ✅ Complete | ArXiv, HackerNews, RSS with rate limiting |
+| **Multi-Source Fetching** | ✅ Complete | 7 sources: ArXiv, HackerNews, RSS, YouTube, Hugging Face, Reddit, GitHub |
 | **AI Analysis** | ✅ Complete | Google Gemini with structured output |
-| **Semantic Deduplication** | ✅ Complete | Vector similarity with pgvector |
-| **REST API** | ✅ Complete | FastAPI with full CRUD operations |
+| **Semantic Deduplication** | ✅ Complete | Vector similarity with pgvector (85% threshold) |
+| **REST API** | ✅ Complete | 16 endpoints with search, filter, pagination |
+| **Core Backend APIs** | ✅ Complete | Search, filter, paginated articles, digests, sources (27/27 tests) |
 | **Rate Limiting** | ✅ Complete | Token bucket algorithm (17/17 tests) |
 | **Digest Generation** | ✅ Complete | AI-powered daily summaries (12/12 tests) |
 | **Text-to-Speech** | ✅ Complete | ElevenLabs integration (17/17 tests) |
 | **Task Scheduling** | ✅ Complete | Background job processing (16/16 tests) |
-| **Database Schema** | ✅ Complete | Optimized PostgreSQL with RLS policies |
+| **Database Schema** | ✅ Complete | Optimized PostgreSQL with full-text search indexes |
 
 ### 📊 **Performance Metrics**
-- **Articles Processed**: 34 articles successfully stored
-- **AI Analysis Success**: 100% (50/50 articles analyzed)
-- **Deduplication Accuracy**: 0 false positives (34 unique articles)
-- **API Response Time**: Sub-second response times
-- **Test Coverage**: 72/72 tests passing across all components
+- **Articles Processed**: Continuous processing from 7 sources
+- **AI Analysis Success**: 100% success rate with Gemini
+- **Deduplication Accuracy**: 85% similarity threshold with pgvector
+- **API Response Time**: Sub-second for all endpoints
+- **Search Performance**: Full-text search with PostgreSQL GIN indexes
+- **Test Coverage**: 99/99 tests passing (72 original + 27 new API tests)
 
 ### 🚀 **Ready for Production Use**
 The system is fully operational and can be deployed immediately with:

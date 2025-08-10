@@ -1,8 +1,8 @@
 # 📋 TASK.md - MVP Completion Tracker
 
-*Updated: 2025-01-07*
+*Updated: 2025-01-10*
 
-## 🎯 Current Status: Backend Complete | Frontend Partial (~70%) | Audio TTS Exists
+## 🎯 Current Status: Backend Complete | Frontend Partial (~70%) | Audio TTS Exists | MCP Server Pending
 
 ### ✅ **COMPLETED FEATURES**
 
@@ -24,11 +24,16 @@
 - [x] Metadata preservation for source mapping
 - [x] Proper indexing and constraints
 
-#### API Endpoints (Partial - 60%)
+#### API Endpoints (Complete - 100%) ✅
 **Implemented:**
 - [x] `GET /health` - Health check
-- [x] `GET /articles` - List articles with basic filtering
+- [x] `GET /articles` - Enhanced pagination with metadata
 - [x] `GET /articles/{id}` - Get single article
+- [x] `GET /articles/search` - Full-text search with fallback
+- [x] `GET /articles/filter` - Advanced multi-criteria filtering
+- [x] `GET /digests` - List all digests with pagination
+- [x] `GET /digests/{id}` - Get specific digest with articles
+- [x] `GET /sources` - Sources metadata and statistics
 - [x] `POST /webhook/fetch` - Manual fetch trigger
 - [x] `GET /digest/latest` - Get latest digest
 - [x] `GET /stats` - System statistics
@@ -79,18 +84,18 @@
 - [ ] **Tag Categories**: Evaluate tag quality and completeness (research, technical tutorial, etc.)
 - [ ] **Analysis Depth**: Review AI analysis depth and relevance scoring accuracy
 
-### 3. **Missing Backend Features** 🔌
-**Status**: Core APIs exist, missing advanced features  
-**Priority**: High  
+### 3. **Backend Features** ✅
+**Status**: Core APIs COMPLETED (2025-01-10)  
+**Priority**: DONE  
 
-**Missing MVP Endpoints:**
-- [ ] `GET /api/articles/search?q={query}&source={source}` - Full-text search functionality
-- [ ] `GET /api/articles/filter?start_date={date}&relevance_min={score}` - Advanced filtering
-- [ ] `GET /api/articles?page={n}&per_page={size}&sort_by={field}` - Enhanced pagination
-- [ ] `GET /api/digests` - List all digests with pagination
-- [ ] `GET /api/digests/{id}` - Get specific digest
-- [ ] `GET /api/sources` - List available sources with counts
-- [ ] **Image/Thumbnail API**: Investigate and implement article image fetching from data sources
+**Completed MVP Endpoints:**
+- [x] `GET /api/v1/articles/search?q={query}&source={source}` - Full-text search functionality ✅
+- [x] `GET /api/v1/articles/filter?start_date={date}&relevance_min={score}` - Advanced filtering ✅
+- [x] `GET /api/v1/articles?page={n}&per_page={size}&sort_by={field}` - Enhanced pagination ✅
+- [x] `GET /api/v1/digests` - List all digests with pagination ✅
+- [x] `GET /api/v1/digests/{id}` - Get specific digest ✅
+- [x] `GET /api/v1/sources` - List available sources with counts ✅
+- [ ] **Image/Thumbnail API**: Still needs investigation for article images from data sources
 
 ### 4. **Audio Integration** 🔊
 **Status**: TTS Service Fully Implemented But Completely Disconnected  
@@ -136,17 +141,20 @@ The TTS service is fully functional but completely disconnected from the digest 
 
 ### 5. **MCP Server Implementation** 🔌
 **Status**: Template Code Only (Not Implemented)  
-**Priority**: Low (Post-MVP)  
+**Priority**: CRITICAL (Required for MVP)  
 **Reference**: `spec/mcp-server.md`
 
 **Current Status:**
 - ❌ `mcp-server/` directory contains template code from forked repo
 - ❌ No actual MCP server implementation
 
-**Missing (Future):**
-- [ ] MCP server for external integrations
-- [ ] Custom tools for article analysis
-- [ ] Integration with external AI assistants
+**MVP MCP Tools (Required):**
+- [ ] `get_latest_arxiv_papers` - Fetch AI/ML papers
+- [ ] `get_hackernews_stories` - Get HN AI stories  
+- [ ] `get_rss_feed_articles` - Pull RSS content
+- [ ] `search_content` - Search all sources
+- [ ] `summarize_article` - Generate summaries using existing agents
+- [ ] `generate_daily_digest` - Create digests from backend data
 
 ### 6. **Advanced Features** 🚀
 **Status**: Specified but not MVP-critical  
@@ -172,123 +180,92 @@ The TTS service is fully functional but completely disconnected from the digest 
 
 ---
 
-## 🎯 **REVISED MVP COMPLETION PLAN**
+## 🎯 **MVP v1 REQUIREMENTS - GROUPED FOR FUNCTIONAL APP**
 
-### Phase 1: Critical UI/UX Fixes (2-3 days)
-*Address immediate frontend issues for better user experience*
+### **Group 1: Core Functionality** (3-4 days)
+*App won't work properly without these*
 
-**Priority Tasks:**
-1. **Fix Filter Bar Layout Issues (Completed)**
-   - Resolve overlapping elements in relevance slider row
-   - Fix spacing and alignment issues
-   - Test responsive behavior across screen sizes
+#### **Backend APIs** ✅ COMPLETED
+- [x] `/api/v1/articles/search` - Search functionality ✅
+- [x] `/api/v1/articles/filter` - Date/relevance filtering ✅
+- [x] `/api/v1/articles` with pagination - Proper page navigation ✅
+- [x] `/api/v1/digests` - List all digests ✅
+- [x] `/api/v1/digests/{id}` - Get specific digest ✅
+- [x] `/api/v1/sources` - Show available sources ✅
 
-2. **Implement Article Content Preprocessing**
-   - Clean up LaTeX symbols from article content (`\`, `65\%`, `\textit{}`, `\textbf{}`)
-   - Implement proper text sanitization pipeline
-   - Add text formatting utilities
+#### **Frontend Fixes**
+- [ ] Clean LaTeX symbols in article content
+- [ ] Implement real images from sources (or smart placeholders)
+- [ ] Remove broken modal buttons
+- [ ] Fix related articles feature
 
-3. **AI Analysis Quality Assessment**
-   - Review current AI summary generation quality
-   - Assess tag system (dynamic generation vs fixed categories)
-   - Validate relevance scoring accuracy
-   - Document tag categories and usage patterns
+### **Group 2: Audio System** (1-2 days)
+*Complete the TTS pipeline*
+- [ ] Connect digest_agent.py → tts.py
+- [ ] Add audio_url to database
+- [ ] Create `/api/digests/{id}/audio` endpoint
+- [ ] Wire frontend AudioPlayer to backend
 
-4. **Modal Interface Cleanup**
-   - Remove share, bookmark, and reanalyze buttons from article modal
-   - Assess related articles functionality and data source
-   - Simplify modal actions to essential features only
+### **Group 3: MCP Server** (2-3 days)
+*Critical for v1 - AI assistant integration*
+- [ ] Implement core MCP tools (see section 5 above)
+- [ ] Test integration with Claude/Cursor
+- [ ] Add authentication and rate limiting
+- [ ] Documentation for MCP usage
 
-5. **Header Copy Improvement**
-   - Fix "Your Daily AI Intelligence" redundancy issue (says "Artificial Intelligence Intelligence")
-   - Options: "Your Daily AI Insights", "Your Daily AI Brief", "Your Daily AI Update", "Your Daily Intelligence", or keep as-is since it "has a ring to it"
-   - Priority: Low (cosmetic copy improvement)
+### **Group 4: Polish & Quality** (1-2 days)
+*Makes it production-ready*
+- [ ] AI quality validation (summaries, tags, relevance)
+- [ ] Update website copy (hero, value props)
+- [ ] Fix production build errors
+- [ ] Add loading states and error handling
+- [ ] Test end-to-end flows
 
-### Phase 2: Content Enhancement (2-3 days)
-*Improve content display and data source integration*
+---
 
-**Priority Tasks:**
-1. **Investigate Data Source Images**
-   - Research image/thumbnail availability from each data source (ArXiv, HackerNews, RSS, YouTube, HuggingFace, Reddit, GitHub)
-   - Implement proper image fetching and caching
-   - Create source-specific placeholder images where real images aren't available
+## 📅 **EXECUTION PLAN FOR FUNCTIONAL MVP**
 
-2. **Related Articles Assessment**
-   - Evaluate current related articles logic and data source
-   - Determine if using vector embeddings or other similarity methods
-   - Optimize related articles algorithm for relevance
+### **Week 1: Make It Work**
+- **Days 1-2:** Backend APIs (search, filter, pagination, digests)
+- **Days 3-4:** Frontend fixes (content formatting, images, modal)
+- **Day 5:** Audio integration (connect TTS pipeline)
 
-### Phase 3: Backend API Enhancement (2-4 days)
-*Complete missing API endpoints for full frontend functionality*
+### **Week 2: Make It Complete**
+- **Days 6-7:** MCP server implementation
+- **Day 8:** AI quality check & website copy
+- **Day 9:** Fix build, testing, polish
+- **Day 10:** Final testing & deployment prep
 
-**Priority Tasks:**
-1. **Search & Discovery APIs**
-   ```python
-   @router.get("/api/articles/search")     # Full-text search with filters
-   @router.get("/api/articles/filter")     # Advanced date/relevance filtering  
-   @router.get("/api/sources")             # Source metadata with counts
-   ```
+---
 
-2. **Enhanced Article Management**
-   ```python
-   @router.get("/api/articles")            # Enhanced with pagination/sorting
-   @router.get("/api/articles/related/{id}") # Vector similarity search
-   @router.get("/api/articles/categories") # Dynamic category listing
-   ```
+## ✅ **DEFINITION OF DONE FOR v1 MVP**
 
-3. **Digest Management System**
-   ```python
-   @router.get("/api/digests")             # Paginated digest listing
-   @router.get("/api/digests/{id}")        # Single digest retrieval  
-   ```
+The app is **fully functional** when:
 
-### Phase 4: Audio Integration (1-2 days)
-*Wire together existing TTS service, frontend player, and digest workflow*
+**Users can:**
+- Search and filter articles
+- Read clean, formatted content
+- Navigate with pagination
+- Listen to audio digests
+- See real images (not placeholders)
 
-**The Task:** Connect 3 existing functional pieces that are currently disconnected:
-- ✅ Fully working TTS service (`src/services/tts.py`)
-- ✅ Complete frontend AudioPlayer (`UI/src/components/AudioPlayer.tsx`) 
-- ✅ Digest generation (`src/agents/digest_agent.py`)
+**AI Assistants can:**
+- Connect via MCP server
+- Fetch latest AI news
+- Generate summaries
+- Search content
+- Create digests
 
-**Priority Tasks:**
-1. **Digest Workflow Integration**
-   ```python
-   # Modify src/agents/digest_agent.py to call TTS after text generation
-   from ..services.tts import get_tts_service
-   
-   async def generate_digest_with_audio(articles, date):
-       # Generate text digest (existing functionality)
-       digest = await generate_text_digest(articles, date)
-       
-       # NEW: Generate audio using existing TTS service
-       tts_service = get_tts_service()
-       audio_result = await tts_service.generate_digest_audio(digest.summary)
-       
-       # Store audio URL in database
-       digest.audio_url = audio_result.audio_file_path
-       return digest
-   ```
+**System:**
+- Builds without errors
+- All critical APIs working
+- Audio pipeline connected
+- MCP server operational
+- Quality content (no LaTeX symbols, good summaries)
 
-2. **Database Schema Update**
-   ```sql
-   -- Add to daily_digests table
-   ALTER TABLE daily_digests ADD COLUMN audio_url TEXT;
-   ALTER TABLE daily_digests ADD COLUMN audio_duration INTEGER;
-   ```
+---
 
-3. **Audio Streaming API**
-   ```python
-   # Add to src/api/routes.py
-   @router.get("/api/digests/{id}/audio")
-   async def stream_digest_audio(id: str):
-       # Serve audio file with range request support
-       # File path is stored in database audio_url field
-   ```
 
-4. **Frontend Connection**
-   - Pass audio URL from digest API to existing AudioPlayer component
-   - No changes needed to AudioPlayer - it already handles audio URLs
-   - Add loading states while audio generates
 
 ---
 
@@ -315,46 +292,40 @@ The TTS service is fully functional but completely disconnected from the digest 
 
 ## 📊 **UPDATED PRIORITY MATRIX**
 
-| Issue | Impact | Effort | Priority | Phase | Reference |
-|-------|--------|--------|----------|-------|-----------|
-| Filter Bar Layout Fix (Completed) | HIGH | LOW | DONE | — | Frontend UI Issues |
-| Article Body Formatting | HIGH | MEDIUM | **CRITICAL** | 1 | Content Quality |
-| AI Analysis Assessment | HIGH | MEDIUM | **HIGH** | 1 | Quality Validation |
-| Card Image Implementation | HIGH | HIGH | **HIGH** | 2 | Data Source Integration |
-| Search API Endpoints | HIGH | MEDIUM | **HIGH** | 3 | `spec/api-enhancement.md` |
-| Related Articles Logic | MEDIUM | MEDIUM | **MEDIUM** | 2 | Content Enhancement |
-| Audio Integration | MEDIUM | MEDIUM | **MEDIUM** | 4 | `spec/audio-integration.md` |
-| Modal Button Removal | LOW | LOW | **LOW** | 1 | UI Polish |
-| MCP Server Implementation | LOW | HIGH | **FUTURE** | Future | `spec/mcp-server.md` |
+| Issue | Impact | Effort | Priority | Group | Status |
+|-------|--------|--------|----------|-------|--------|
+| Backend APIs (search, filter, etc) | CRITICAL | MEDIUM | **DONE** | — | ✅ Completed |
+| Article Body Formatting | HIGH | MEDIUM | **MVP** | 1 | ❌ Not Started |
+| Card Image Implementation | HIGH | HIGH | **MVP** | 1 | ❌ Not Started |
+| Audio Integration | HIGH | MEDIUM | **MVP** | 2 | ⚠️ 50% (TTS exists) |
+| MCP Server Implementation | CRITICAL | HIGH | **MVP** | 3 | ❌ Not Started |
+| AI Analysis Assessment | MEDIUM | LOW | **MVP** | 4 | ❌ Not Started |
+| Website Copy Update | LOW | LOW | **MVP** | 4 | ❌ Not Started |
+| Filter Bar Layout Fix | HIGH | LOW | DONE | — | ✅ Completed |
 
 ---
 
-## 🚀 **UPDATED NEXT ACTIONS**
+## 🚀 **NEXT ACTIONS - MVP FOCUS**
 
-### Immediate (This Week)
-1. **Fix critical UI issues** - Article body formatting
-2. **Assess AI analysis quality** - Summary accuracy, tag system, relevance scoring
-3. **Clean up modal interface** - Remove unnecessary buttons, assess related articles
+### Week 1: Core Functionality
+1. **Days 1-2:** Implement missing backend APIs
+2. **Days 3-4:** Fix frontend issues (LaTeX, images, modal)
+3. **Day 5:** Connect audio pipeline
 
-### Short Term (Next Week)
-4. **Implement proper images** - Research data source images, improve placeholders
-5. **Add missing APIs** - Search endpoints, enhanced filtering
-6. **Connect audio system** - TTS integration with digest workflow
-
-### Medium Term (Post-MVP)
-7. **Advanced features** - Trending, analytics, user features
-8. **MCP server** - External integrations (template code exists but not implemented)
-9. **AI enhancements** - Entity extraction, sentiment analysis
+### Week 2: Complete Integration
+4. **Days 6-7:** Build MCP server with core tools
+5. **Day 8:** Quality checks and copy updates
+6. **Days 9-10:** Fix build, test, deploy
 
 ---
 
 ## 📝 **UPDATED NOTES**
 
-- **Current Status**: ~70% complete (much closer to MVP than initially assessed)
-- **Backend**: Production-ready with comprehensive testing and all data fetchers working
-- **Frontend**: Substantial progress made but needs critical fixes for user experience
-- **Audio**: TTS service exists, frontend player exists, needs integration workflow
-- **MCP Server**: Only template code exists - not actually implemented
-- **Main Focus**: Frontend polish and content quality improvements for MVP
+- **Current Status**: ~65% complete overall
+- **Backend**: 95% ready (missing 6 critical APIs)
+- **Frontend**: 70% ready (needs content fixes and image handling)
+- **Audio**: 50% ready (TTS exists but disconnected)
+- **MCP Server**: 0% (template only, critical for v1)
+- **Main Focus**: Core functionality, then MCP integration
 
-**Revised Estimated Time to MVP**: 5-8 days with focus on critical UI fixes and content quality
+**Estimated Time to MVP**: 8-10 days including MCP server
