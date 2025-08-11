@@ -1,1332 +1,841 @@
-name: "MCP Server Implementation - AI News Aggregator Tools PRP"
-description: |
+# Project Requirement Plan: AI News Aggregator MCP Server Implementation
 
-## Purpose
-Implement a Model Context Protocol (MCP) server in Python that exposes AI News Aggregator data and tools to AI assistants (Claude, Cursor, etc.). The server will leverage existing backend services for content retrieval, analysis, and export capabilities.
+**Generated:** January 11, 2025  
+**Agent Type:** backend-api-architect  
+**Architecture Decision:** Pure TypeScript (Direct Supabase Connection)  
+**Confidence Score:** 9/10
 
-## Core Principles
-1. **Reuse Backend**: Direct Python imports of existing backend services (no HTTP duplication)
-2. **MCP Compliance**: Follow MCP specification for JSON-RPC 2.0 protocol
-3. **Async First**: Use existing async patterns from backend services
-4. **Rate Limit Respect**: Inherit backend rate limiting (ArXiv 3s, HN 1req/s)
-5. **Error Resilience**: Circuit breaker patterns from existing backend
+## Executive Summary
 
----
+Extend the existing production-ready MCP server (Cloudflare Workers, TypeScript, GitHub OAuth) to expose AI news aggregator data and tools. The server already has secure database access, OAuth authentication, and tool registration infrastructure. We will add news-specific tools by porting key queries from the Python repository and implementing caching for optimal performance.
 
-## Goal
-Create an MCP server that exposes 6 MVP tools for AI assistants to interact with the news aggregator, enabling content retrieval, search, summarization, and digest generation through the MCP protocol.
+**Critical Context:** The Python backend is NOT deployed publicly, confirming Pure TypeScript architecture is correct. The existing MCP server in `mcp-server/` is well-architected with GitHub OAuth, SQL injection protection, and role-based access control.
 
-## Why
-- **AI Assistant Integration**: Enable Claude, Cursor to access aggregated AI news
-- **Direct Data Access**: AI assistants can query and analyze content directly
-- **Leverage Existing**: All backend services ready to be exposed via MCP
-- **MVP Critical**: MCP server listed as critical requirement for v1
+## Architecture Overview
 
-## What
-MCP server with:
-- 6 MVP tools (arxiv, hackernews, rss, search, summarize, digest)
-- Direct backend service integration (no HTTP calls)
-- Proper MCP protocol implementation with JSON-RPC 2.0
-- Error handling and rate limiting from backend
-- Authentication via environment variables
-- Async tool implementations
-
-### Success Criteria
-- [ ] All 6 MVP tools working with Claude Desktop
-- [ ] Rate limits respected (ArXiv 3s delay maintained)
-- [ ] Search returns results in < 500ms
-- [ ] Summarization uses existing PydanticAI agents
-- [ ] Digest generation leverages existing workflow
-- [ ] Error messages propagate correctly to MCP clients
-- [ ] All tests pass with > 90% coverage
-
-## All Needed Context
-
-### Documentation & References
-```yaml
-# MUST READ - Include these in your context window
-- file: src/fetchers/arxiv_fetcher.py
-  why: ArXiv fetcher patterns with rate limiting
-  
-- file: src/fetchers/hackernews_fetcher.py
-  why: HackerNews fetcher implementation
-  
-- file: src/fetchers/rss_fetcher.py
-  why: RSS fetcher with dynamic feed management
-  
-- file: src/repositories/articles.py
-  why: Search and filter implementations
-  
-- file: src/agents/news_agent.py
-  why: Summarization agent patterns
-  
-- file: src/agents/digest_agent.py
-  why: Digest generation workflow
-  
-- file: src/config.py
-  why: Configuration and environment patterns
-  
-- file: src/main.py
-  why: FastAPI app structure for reference
-  
-- docfile: spec/mcp-server.md
-  why: Complete specification with tool definitions
-
-# External Documentation via MCP
-- mcp: mcp__context7__resolve-library-id
-  params: "mcp"
-  then: mcp__context7__get-library-docs("/modelcontextprotocol/python-sdk", topic="server,tools")
-  why: MCP Python SDK patterns
-  
-- url: https://spec.modelcontextprotocol.io/specification/server/tools/
-  section: Tool definition and response formats
-  critical: Must follow exact JSON-RPC format
-  
-- url: https://github.com/modelcontextprotocol/python-sdk/tree/main/examples
-  why: Example MCP server implementations in Python
-  
-- url: https://docs.anthropic.com/en/docs/build-with-claude/mcp
-  section: Claude MCP integration requirements
+```
+┌─────────────────────┐     ┌──────────────────────┐     ┌─────────────────────┐
+│   MCP Clients       │────▶│  TypeScript MCP      │────▶│   Supabase          │
+│ (Claude/Cursor/etc) │     │  (Cloudflare Workers)│     │   (PostgreSQL)      │
+└─────────────────────┘     └──────────────────────┘     └─────────────────────┘
+       MCP Protocol         Existing Infrastructure        Direct Connection
+                           + New AI News Tools
 ```
 
-### Current Codebase Structure
-```bash
-src/
-├── agents/           # AI agents (news, digest)
-├── fetchers/         # Content fetchers (arxiv, hn, rss)
-├── repositories/     # Data access (search, filter)
-├── services/         # Core services (embeddings, TTS)
-├── api/             # FastAPI routes
-├── models/          # Pydantic models
-└── config.py        # Configuration management
+## Pre-Implementation Research
 
-mcp-server/          # Existing TypeScript template (ignore)
+### 1. Get Latest Documentation
+
+```
+# FastAPI docs (for reference patterns from Python code)
+mcp__context7__resolve-library-id("fastapi")
+mcp__context7__get-library-docs("/tiangolo/fastapi", topic="dependencies")
+
+# Supabase client docs for TypeScript
+mcp__context7__resolve-library-id("supabase-js")
+mcp__context7__get-library-docs("/supabase/supabase-js", topic="select queries")
+
+# Cloudflare Workers KV for caching
+mcp__context7__resolve-library-id("cloudflare-workers")
+mcp__context7__get-library-docs("/cloudflare/workers-types", topic="kv namespace")
 ```
 
-### Desired Structure with New Files
-```bash
-src/
-├── mcp/
-│   ├── __init__.py
-│   ├── server.py           # Main MCP server implementation
-│   ├── tools/
-│   │   ├── __init__.py
-│   │   ├── content.py      # Content retrieval tools
-│   │   ├── analysis.py     # Analysis and summary tools
-│   │   └── export.py       # Export and digest tools
-│   ├── handlers.py         # JSON-RPC request handlers
-│   ├── errors.py          # MCP error definitions
-│   └── types.py           # MCP type definitions
-├── mcp_main.py            # MCP server entry point
-└── tests/
-    └── test_mcp/
-        ├── test_server.py
-        ├── test_tools.py
-        └── test_handlers.py
+### 2. Inspect Current Database Schema
+
+```
+mcp__supabase__list_tables(schemas=["public"])
+mcp__supabase__execute_sql(query="SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'articles'")
+mcp__supabase__execute_sql(query="SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'daily_digests'")
 ```
 
-### Known Gotchas & Critical Context
-```python
-# CRITICAL: MCP uses JSON-RPC 2.0 format
-# Request: {"jsonrpc": "2.0", "method": "tools/call", "params": {...}, "id": 1}
-# Response: {"jsonrpc": "2.0", "result": {...}, "id": 1}
+### 3. Web Research
 
-# CRITICAL: Tool names must be lowercase with underscores
-# Good: get_latest_arxiv_papers
-# Bad: getLatestArxivPapers, get-latest-arxiv-papers
-
-# CRITICAL: ArXiv rate limit is 3 seconds
-# Must use existing arxiv_fetcher with delay_seconds=3.0
-# Never bypass this or risk IP ban
-
-# PATTERN: Import backend services directly
-# from src.fetchers.arxiv_fetcher import ArxivFetcher
-# NOT: requests.get("http://localhost:8000/api/...")
-
-# PATTERN: Use existing async patterns
-# All backend services are async-ready
-# MCP tools must be async def
-
-# GOTCHA: MCP server runs separately from FastAPI
-# Different port (default 3000 for MCP)
-# Can share same .env configuration
-
-# GOTCHA: Error handling
-# MCP expects specific error codes
-# -32700: Parse error
-# -32600: Invalid request
-# -32601: Method not found
-# -32602: Invalid params
-# -32603: Internal error
-
-# PATTERN: Authentication
-# MCP server should validate API keys from env
-# Use same pattern as FastAPI dependencies
-```
+Search for:
+- "MCP server Cloudflare Workers best practices 2025" 
+- "TypeScript Supabase connection pooling edge functions"
+- "Cloudflare KV caching strategies for database queries"
 
 ## Implementation Blueprint
 
-### Data Models
-```python
-# src/mcp/types.py - MCP type definitions
+### Phase 1: Database Query Module
 
-from typing import Any, Dict, List, Optional, Union
-from pydantic import BaseModel, Field
-from enum import Enum
+**File:** `mcp-server/src/database/news-queries.ts`
 
-class MCPRequest(BaseModel):
-    """JSON-RPC 2.0 request format."""
-    jsonrpc: str = "2.0"
-    method: str
-    params: Optional[Dict[str, Any]] = None
-    id: Optional[Union[str, int]] = None
+Port these methods from `src/repositories/articles.py`:
 
-class MCPResponse(BaseModel):
-    """JSON-RPC 2.0 response format."""
-    jsonrpc: str = "2.0"
-    result: Optional[Any] = None
-    error: Optional[Dict[str, Any]] = None
-    id: Optional[Union[str, int]] = None
+```typescript
+import { getDb } from './connection';
+import { validateSqlQuery } from './security';
+import { withDatabase } from './utils';
 
-class ToolDefinition(BaseModel):
-    """MCP tool definition."""
-    name: str
-    description: str
-    input_schema: Dict[str, Any]
+export interface ArticleFilters {
+  source?: string;
+  limit?: number;
+  offset?: number;
+  since?: Date;
+  minRelevanceScore?: number;
+}
 
-class ToolCallParams(BaseModel):
-    """Parameters for tool execution."""
-    name: str
-    arguments: Optional[Dict[str, Any]] = Field(default_factory=dict)
+/**
+ * Search articles using full-text search
+ * Ported from: src/repositories/articles.py:search_articles()
+ */
+export async function searchArticles(
+  databaseUrl: string, 
+  query: string, 
+  filters?: ArticleFilters
+): Promise<{ articles: any[], total: number }> {
+  return withDatabase(databaseUrl, async (db) => {
+    // Build dynamic query similar to Python implementation
+    const conditions = ['to_tsvector(title || \' \' || content) @@ plainto_tsquery($1)'];
+    const params = [query];
+    
+    if (filters?.source) {
+      conditions.push(`source = $${params.length + 1}`);
+      params.push(filters.source);
+    }
+    
+    if (filters?.minRelevanceScore) {
+      conditions.push(`relevance_score >= $${params.length + 1}`);
+      params.push(filters.minRelevanceScore);
+    }
+    
+    const whereClause = conditions.join(' AND ');
+    const limit = filters?.limit || 20;
+    const offset = filters?.offset || 0;
+    
+    // Get total count
+    const countResult = await db.unsafe(
+      `SELECT COUNT(*) FROM articles WHERE ${whereClause}`,
+      params
+    );
+    
+    // Get paginated results
+    const articles = await db.unsafe(
+      `SELECT * FROM articles 
+       WHERE ${whereClause}
+       ORDER BY published_at DESC
+       LIMIT ${limit} OFFSET ${offset}`,
+      params
+    );
+    
+    return { articles, total: parseInt(countResult[0].count) };
+  });
+}
 
-class ToolResult(BaseModel):
-    """Result from tool execution."""
-    content: List[Dict[str, Any]]
-    is_error: bool = False
+/**
+ * Get latest articles from past N hours
+ * Ported from: src/repositories/articles.py:get_articles()
+ */
+export async function getLatestArticles(
+  databaseUrl: string,
+  hours = 24,
+  filters?: ArticleFilters
+): Promise<any[]> {
+  return withDatabase(databaseUrl, async (db) => {
+    const since = new Date(Date.now() - hours * 60 * 60 * 1000);
+    
+    let query = `
+      SELECT * FROM articles 
+      WHERE published_at >= $1
+      AND is_duplicate = false
+    `;
+    const params: any[] = [since];
+    
+    if (filters?.source) {
+      query += ` AND source = $${params.length + 1}`;
+      params.push(filters.source);
+    }
+    
+    query += ` ORDER BY published_at DESC LIMIT ${filters?.limit || 50}`;
+    
+    return db.unsafe(query, params);
+  });
+}
 
-class ServerCapabilities(BaseModel):
-    """MCP server capabilities."""
-    tools: Dict[str, bool] = {"listChanged": True}
-    resources: Optional[Dict[str, bool]] = None
-    prompts: Optional[Dict[str, bool]] = None
+/**
+ * Get article statistics
+ * Ported from: src/repositories/articles.py:get_article_stats()
+ */
+export async function getArticleStats(databaseUrl: string): Promise<any> {
+  return withDatabase(databaseUrl, async (db) => {
+    const stats = await db.unsafe(`
+      SELECT 
+        COUNT(*) as total_articles,
+        COUNT(CASE WHEN published_at > NOW() - INTERVAL '24 hours' THEN 1 END) as recent_24h,
+        COUNT(CASE WHEN is_duplicate = true THEN 1 END) as duplicates,
+        COUNT(DISTINCT source) as unique_sources,
+        AVG(relevance_score) as avg_relevance
+      FROM articles
+    `);
+    
+    return stats[0];
+  });
+}
+
+/**
+ * Get daily digests with pagination
+ * Ported from: src/repositories/articles.py:get_digests()
+ */
+export async function getDigests(
+  databaseUrl: string,
+  page = 1,
+  perPage = 10
+): Promise<{ digests: any[], total: number }> {
+  return withDatabase(databaseUrl, async (db) => {
+    const offset = (page - 1) * perPage;
+    
+    const countResult = await db.unsafe(
+      'SELECT COUNT(*) FROM daily_digests'
+    );
+    
+    const digests = await db.unsafe(`
+      SELECT 
+        id, date, title, summary, key_developments,
+        audio_url, audio_duration, created_at,
+        (SELECT COUNT(*) FROM digest_articles WHERE digest_id = daily_digests.id) as article_count
+      FROM daily_digests
+      ORDER BY date DESC
+      LIMIT $1 OFFSET $2
+    `, [perPage, offset]);
+    
+    return { 
+      digests, 
+      total: parseInt(countResult[0].count) 
+    };
+  });
+}
+
+/**
+ * Get single digest with articles
+ * Ported from: src/repositories/articles.py:get_digest_by_id()
+ */
+export async function getDigestById(
+  databaseUrl: string,
+  digestId: string
+): Promise<any> {
+  return withDatabase(databaseUrl, async (db) => {
+    const digest = await db.unsafe(`
+      SELECT * FROM daily_digests WHERE id = $1
+    `, [digestId]);
+    
+    if (!digest.length) return null;
+    
+    const articles = await db.unsafe(`
+      SELECT a.* 
+      FROM articles a
+      JOIN digest_articles da ON a.id = da.article_id
+      WHERE da.digest_id = $1
+      ORDER BY a.relevance_score DESC
+    `, [digestId]);
+    
+    return { ...digest[0], articles };
+  });
+}
+
+/**
+ * Get sources metadata
+ * New function for MCP server
+ */
+export async function getSourcesMetadata(databaseUrl: string): Promise<any[]> {
+  return withDatabase(databaseUrl, async (db) => {
+    const sources = await db.unsafe(`
+      SELECT 
+        source as name,
+        COUNT(*) as article_count,
+        MAX(published_at) as last_published,
+        AVG(relevance_score) as avg_relevance_score,
+        COUNT(CASE WHEN published_at > NOW() - INTERVAL '7 days' THEN 1 END) as recent_count
+      FROM articles
+      GROUP BY source
+      ORDER BY article_count DESC
+    `);
+    
+    // Add display names and descriptions
+    return sources.map(source => ({
+      ...source,
+      display_name: getSourceDisplayName(source.name),
+      description: getSourceDescription(source.name),
+      status: source.recent_count > 0 ? 'active' : 'inactive'
+    }));
+  });
+}
+
+// Helper functions
+function getSourceDisplayName(source: string): string {
+  const displayNames: Record<string, string> = {
+    'arxiv': 'ArXiv',
+    'hackernews': 'Hacker News',
+    'reddit_machinelearning': 'Reddit r/MachineLearning',
+    'reddit_locallama': 'Reddit r/LocalLLaMA',
+    'github_trending': 'GitHub Trending'
+  };
+  return displayNames[source] || source;
+}
+
+function getSourceDescription(source: string): string {
+  const descriptions: Record<string, string> = {
+    'arxiv': 'Latest AI/ML research papers',
+    'hackernews': 'Tech news and discussions',
+    'reddit_machinelearning': 'ML community discussions',
+    'reddit_locallama': 'Open source LLM discussions',
+    'github_trending': 'Trending AI/ML repositories'
+  };
+  return descriptions[source] || 'AI/ML news source';
+}
 ```
 
-### Task List
+### Phase 2: Tool Registration
 
-```yaml
-Task 1: Install MCP Python SDK
-EXECUTE:
-  pip install mcp
+**File:** `mcp-server/src/tools/news-tools.ts`
 
-Task 2: Create MCP Type Definitions
-CREATE src/mcp/types.py:
-  - DEFINE: MCPRequest, MCPResponse models
-  - DEFINE: ToolDefinition, ToolCallParams
-  - FOLLOW: MCP specification exactly
-  - PATTERN: Use Pydantic for validation
+```typescript
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { z } from "zod";
+import { Props } from "../types";
+import * as newsQueries from '../database/news-queries';
 
-Task 3: Create Error Definitions
-CREATE src/mcp/errors.py:
-  - DEFINE: MCP error codes and messages
-  - MAP: Backend exceptions to MCP errors
-  - INCLUDE: Rate limit errors
-  - PATTERN: Inherit from existing error classes
+// Input validation schemas
+const SearchArticlesSchema = z.object({
+  query: z.string().min(1).max(200).describe("Search query"),
+  source: z.string().optional().describe("Filter by source (arxiv, hackernews, reddit_machinelearning, etc)"),
+  limit: z.number().int().positive().max(100).default(20).describe("Number of results"),
+  offset: z.number().int().min(0).default(0).describe("Pagination offset")
+});
 
-Task 4: Create Content Retrieval Tools
-CREATE src/mcp/tools/content.py:
-  - TOOL: get_latest_arxiv_papers
-    - Import: ArxivFetcher from backend
-    - Params: categories, max_results
-    - Respect: 3-second rate limit
-  - TOOL: get_hackernews_stories
-    - Import: HackerNewsFetcher
-    - Params: story_type, limit
-  - TOOL: get_rss_feed_articles
-    - Import: RSSFetcher
-    - Params: feed_names, limit
-  - PATTERN: Direct service imports
+const GetLatestArticlesSchema = z.object({
+  hours: z.number().int().positive().max(168).default(24).describe("Get articles from past N hours"),
+  source: z.string().optional().describe("Filter by source"),
+  limit: z.number().int().positive().max(100).default(50).describe("Number of results")
+});
 
-Task 5: Create Analysis Tools
-CREATE src/mcp/tools/analysis.py:
-  - TOOL: search_content
-    - Import: ArticleRepository
-    - Use: search_articles method
-    - Params: query, source, limit
-  - TOOL: summarize_article
-    - Import: NewsAnalyzer agent
-    - Use: analyze_article method
-    - Params: article_id or content
-  - PATTERN: Reuse existing agents
+const GetDigestsSchema = z.object({
+  page: z.number().int().positive().default(1).describe("Page number"),
+  per_page: z.number().int().positive().max(50).default(10).describe("Items per page")
+});
 
-Task 6: Create Export Tools
-CREATE src/mcp/tools/export.py:
-  - TOOL: generate_daily_digest
-    - Import: DigestAgent
-    - Use: generate_digest method
-    - Params: date, min_relevance
-  - FUTURE: export_articles (Tier 1)
-  - PATTERN: Async digest generation
+const GetDigestByIdSchema = z.object({
+  digest_id: z.string().uuid().describe("Digest UUID")
+});
 
-Task 7: Create Request Handlers
-CREATE src/mcp/handlers.py:
-  - HANDLE: initialize request
-  - HANDLE: tools/list request
-  - HANDLE: tools/call request
-  - ROUTING: Method to handler mapping
-  - ERROR: Proper JSON-RPC error responses
+export function registerNewsTools(server: McpServer, env: Env, props: Props) {
+  console.log(`Registering news tools for user: ${props.login}`);
 
-Task 8: Create Main MCP Server
-CREATE src/mcp/server.py:
-  - CLASS: MCPServer with tool registry
-  - INIT: Load all tools dynamically
-  - SERVE: Handle JSON-RPC over stdio
-  - AUTH: Validate API keys from env
-  - LOG: Request/response logging
-
-Task 9: Create Server Entry Point
-CREATE src/mcp_main.py:
-  - SETUP: Async event loop
-  - CONFIG: Load from .env
-  - START: MCP server on stdio
-  - SIGNAL: Handle shutdown gracefully
-
-Task 10: Create Tool Tests
-CREATE tests/test_mcp/test_tools.py:
-  - TEST: Each tool with mock data
-  - VERIFY: Rate limiting respected
-  - CHECK: Error handling
-  - MOCK: Backend services
-
-Task 11: Create Handler Tests
-CREATE tests/test_mcp/test_handlers.py:
-  - TEST: JSON-RPC request parsing
-  - TEST: Method routing
-  - TEST: Error responses
-  - TEST: Initialize flow
-
-Task 12: Create Integration Tests
-CREATE tests/test_mcp/test_integration.py:
-  - TEST: Full request/response cycle
-  - TEST: Tool execution end-to-end
-  - MOCK: External dependencies
-  - VERIFY: MCP compliance
-
-Task 13: Create Claude Config
-CREATE claude_mcp_config.json:
-  - CONFIG: Server command
-  - ENV: Required variables
-  - SCHEMA: Tool definitions
-
-Task 14: Documentation
-CREATE mcp-server/README.md:
-  - USAGE: Installation steps
-  - CONFIG: Claude Desktop setup
-  - TOOLS: Full tool documentation
-  - EXAMPLES: Usage examples
-```
-
-### Per-Task Implementation Details
-
-```python
-# Task 4: Content Retrieval Tools
-# src/mcp/tools/content.py
-import asyncio
-from typing import Dict, List, Optional, Any
-from datetime import datetime, timedelta
-
-from src.fetchers.arxiv_fetcher import ArxivFetcher
-from src.fetchers.hackernews_fetcher import HackerNewsFetcher
-from src.fetchers.rss_fetcher import RSSFetcher
-from src.models.articles import Article
-from ..types import ToolResult
-
-class ContentTools:
-    """Content retrieval tools for MCP."""
-    
-    def __init__(self):
-        """Initialize fetchers."""
-        self.arxiv = ArxivFetcher()
-        self.hackernews = HackerNewsFetcher()
-        self.rss = RSSFetcher()
-    
-    async def get_latest_arxiv_papers(
-        self,
-        categories: Optional[List[str]] = None,
-        max_results: int = 10,
-        days_back: int = 7
-    ) -> ToolResult:
-        """
-        Fetch recent AI/ML papers from ArXiv.
+  // Tool 1: Search Articles
+  server.tool(
+    "search_articles",
+    "Search AI/ML news articles using full-text search. Returns articles matching the query with relevance scores.",
+    SearchArticlesSchema,
+    async ({ query, source, limit, offset }) => {
+      try {
+        const startTime = Date.now();
         
-        CRITICAL: Respects 3-second rate limit automatically.
-        """
-        try:
-            # Use existing fetcher with built-in rate limiting
-            articles = await self.arxiv.fetch(
-                max_articles=max_results,
-                since_days=days_back
-            )
-            
-            # Format for MCP response
-            content = []
-            for article in articles:
-                content.append({
-                    "type": "text",
-                    "text": f"**{article.title}**\n"
-                           f"Authors: {article.author}\n"
-                           f"URL: {article.url}\n"
-                           f"Summary: {article.content[:500]}...\n"
-                           f"Published: {article.published_at.isoformat()}"
-                })
-            
-            return ToolResult(content=content)
-            
-        except Exception as e:
-            return ToolResult(
-                content=[{"type": "text", "text": f"Error fetching ArXiv papers: {str(e)}"}],
-                is_error=True
-            )
-    
-    async def get_hackernews_stories(
-        self,
-        story_type: str = "top",
-        limit: int = 10,
-        min_score: int = 50
-    ) -> ToolResult:
-        """
-        Fetch top HackerNews stories related to AI/ML.
-        
-        Args:
-            story_type: One of "top", "new", "best"
-            limit: Number of stories to fetch
-            min_score: Minimum story score
-        """
-        try:
-            # Validate story type
-            valid_types = ["top", "new", "best"]
-            if story_type not in valid_types:
-                story_type = "top"
-            
-            # Use existing fetcher
-            articles = await self.hackernews.fetch(
-                max_articles=limit,
-                story_type=story_type
-            )
-            
-            # Filter by score if needed
-            filtered = [a for a in articles if a.metadata.get("score", 0) >= min_score]
-            
-            content = []
-            for article in filtered[:limit]:
-                content.append({
-                    "type": "text",
-                    "text": f"**{article.title}**\n"
-                           f"URL: {article.url}\n"
-                           f"Score: {article.metadata.get('score', 0)}\n"
-                           f"Comments: {article.metadata.get('comments', 0)}\n"
-                           f"Posted: {article.published_at.isoformat()}"
-                })
-            
-            return ToolResult(content=content)
-            
-        except Exception as e:
-            return ToolResult(
-                content=[{"type": "text", "text": f"Error fetching HackerNews: {str(e)}"}],
-                is_error=True
-            )
-    
-    async def get_rss_feed_articles(
-        self,
-        feed_names: Optional[List[str]] = None,
-        limit: int = 20,
-        hours_back: int = 24
-    ) -> ToolResult:
-        """
-        Fetch articles from configured RSS feeds.
-        
-        Args:
-            feed_names: Specific feed names to fetch from
-            limit: Maximum articles to return
-            hours_back: How many hours back to fetch
-        """
-        try:
-            # Use existing RSS fetcher
-            articles = await self.rss.fetch(max_articles=limit * 2)  # Fetch extra for filtering
-            
-            # Filter by time
-            cutoff = datetime.utcnow() - timedelta(hours=hours_back)
-            recent = [a for a in articles if a.published_at > cutoff]
-            
-            # Filter by feed names if specified
-            if feed_names:
-                recent = [a for a in recent if any(
-                    name.lower() in a.metadata.get("feed_name", "").lower()
-                    for name in feed_names
-                )]
-            
-            content = []
-            for article in recent[:limit]:
-                content.append({
-                    "type": "text",
-                    "text": f"**{article.title}**\n"
-                           f"Source: {article.metadata.get('feed_name', 'Unknown')}\n"
-                           f"URL: {article.url}\n"
-                           f"Summary: {article.content[:300]}...\n"
-                           f"Published: {article.published_at.isoformat()}"
-                })
-            
-            return ToolResult(content=content)
-            
-        except Exception as e:
-            return ToolResult(
-                content=[{"type": "text", "text": f"Error fetching RSS feeds: {str(e)}"}],
-                is_error=True
-            )
-
-# Task 5: Analysis Tools
-# src/mcp/tools/analysis.py
-import asyncio
-from typing import Optional, Dict, Any
-from uuid import UUID
-
-from src.repositories.articles import ArticleRepository
-from src.agents.news_agent import NewsAnalyzer
-from src.agents.digest_agent import DigestAgent
-from src.services.deduplication import DeduplicationService
-from src.config import get_settings
-from supabase import create_client
-from ..types import ToolResult
-
-class AnalysisTools:
-    """Analysis and summarization tools for MCP."""
-    
-    def __init__(self):
-        """Initialize services and agents."""
-        settings = get_settings()
-        self.supabase = create_client(settings.supabase_url, settings.supabase_anon_key)
-        self.article_repo = ArticleRepository(self.supabase)
-        self.news_analyzer = NewsAnalyzer()
-        self.digest_agent = DigestAgent()
-        self.dedup_service = DeduplicationService(self.supabase)
-    
-    async def search_content(
-        self,
-        query: str,
-        source: Optional[str] = None,
-        limit: int = 10,
-        min_relevance: Optional[int] = None
-    ) -> ToolResult:
-        """
-        Search across all aggregated content.
-        
-        Args:
-            query: Search query text
-            source: Optional source filter (arxiv, hackernews, rss)
-            limit: Maximum results
-            min_relevance: Minimum relevance score filter
-        """
-        try:
-            # Use repository search method
-            articles, total = await self.article_repo.search_articles(
-                query=query,
-                source=source,
-                limit=limit,
-                offset=0
-            )
-            
-            # Filter by relevance if specified
-            if min_relevance:
-                articles = [a for a in articles if a.relevance_score >= min_relevance]
-            
-            content = []
-            content.append({
-                "type": "text",
-                "text": f"Found {len(articles)} results for '{query}' (total: {total})\n"
-            })
-            
-            for article in articles:
-                content.append({
-                    "type": "text",
-                    "text": f"**{article.title}**\n"
-                           f"Source: {article.source.value}\n"
-                           f"Relevance: {article.relevance_score}/100\n"
-                           f"URL: {article.url}\n"
-                           f"Summary: {article.summary or article.content[:200]}...\n"
-                })
-            
-            return ToolResult(content=content)
-            
-        except Exception as e:
-            return ToolResult(
-                content=[{"type": "text", "text": f"Search failed: {str(e)}"}],
-                is_error=True
-            )
-    
-    async def summarize_article(
-        self,
-        article_id: Optional[str] = None,
-        url: Optional[str] = None,
-        content: Optional[str] = None
-    ) -> ToolResult:
-        """
-        Generate AI summary of an article.
-        
-        Args:
-            article_id: UUID of article in database
-            url: URL of article to fetch and summarize
-            content: Raw content to summarize
-        """
-        try:
-            article = None
-            
-            # Get article from database if ID provided
-            if article_id:
-                article = await self.article_repo.get_article_by_id(UUID(article_id))
-                if not article:
-                    return ToolResult(
-                        content=[{"type": "text", "text": f"Article {article_id} not found"}],
-                        is_error=True
-                    )
-            
-            # Create temporary article for analysis if content provided
-            elif content:
-                from src.models.articles import Article, ArticleSource
-                article = Article(
-                    source_id="temp",
-                    source=ArticleSource.RSS,
-                    title="User Provided Content",
-                    content=content,
-                    url=url or "https://example.com",
-                    published_at=datetime.utcnow()
-                )
-            else:
-                return ToolResult(
-                    content=[{"type": "text", "text": "Must provide article_id or content"}],
-                    is_error=True
-                )
-            
-            # Use news analyzer to generate summary
-            analysis = await self.news_analyzer.analyze_article(article)
-            
-            content_parts = []
-            content_parts.append({
-                "type": "text",
-                "text": f"**Article Summary**\n\n"
-                       f"Title: {article.title}\n"
-                       f"Relevance Score: {analysis.relevance_score}/100\n\n"
-                       f"**Summary:**\n{analysis.summary}\n\n"
-                       f"**Key Points:**\n"
-            })
-            
-            for point in analysis.key_points:
-                content_parts.append({
-                    "type": "text",
-                    "text": f"• {point}\n"
-                })
-            
-            content_parts.append({
-                "type": "text",
-                "text": f"\n**Categories:** {', '.join(analysis.categories)}\n"
-                       f"**Reasoning:** {analysis.reasoning}"
-            })
-            
-            return ToolResult(content=content_parts)
-            
-        except Exception as e:
-            return ToolResult(
-                content=[{"type": "text", "text": f"Summarization failed: {str(e)}"}],
-                is_error=True
-            )
-    
-    async def generate_daily_digest(
-        self,
-        date: Optional[str] = None,
-        min_relevance: int = 70,
-        max_articles: int = 10
-    ) -> ToolResult:
-        """
-        Generate a daily digest of top AI/ML news.
-        
-        Args:
-            date: Date for digest (YYYY-MM-DD), defaults to today
-            min_relevance: Minimum relevance score
-            max_articles: Maximum articles to include
-        """
-        try:
-            # Get top articles for digest
-            since_hours = 24 if not date else 48  # Wider range if specific date
-            
-            top_articles = await self.article_repo.get_top_articles_for_digest(
-                since_hours=since_hours,
-                min_relevance_score=min_relevance,
-                limit=max_articles
-            )
-            
-            if not top_articles:
-                return ToolResult(
-                    content=[{"type": "text", "text": "No articles found for digest"}],
-                    is_error=True
-                )
-            
-            # Generate digest using agent
-            digest_date = date or datetime.utcnow().strftime("%Y-%m-%d")
-            digest = await self.digest_agent.generate_digest(
-                articles=top_articles,
-                digest_date=digest_date,
-                max_summary_length=2000
-            )
-            
-            content = []
-            content.append({
-                "type": "text",
-                "text": f"**AI Daily Digest - {digest_date}**\n\n"
-                       f"{digest.summary_text}\n\n"
-                       f"**Top Stories:**\n"
-            })
-            
-            for i, article in enumerate(top_articles[:5], 1):
-                content.append({
-                    "type": "text",
-                    "text": f"\n{i}. **{article.title}**\n"
-                           f"   Source: {article.source.value} | "
-                           f"   Relevance: {article.relevance_score}/100\n"
-                           f"   {article.summary or article.content[:200]}...\n"
-                           f"   URL: {article.url}\n"
-                })
-            
-            return ToolResult(content=content)
-            
-        except Exception as e:
-            return ToolResult(
-                content=[{"type": "text", "text": f"Digest generation failed: {str(e)}"}],
-                is_error=True
-            )
-
-# Task 8: Main MCP Server
-# src/mcp/server.py
-import asyncio
-import json
-import sys
-import logging
-from typing import Dict, Any, Optional, List
-from datetime import datetime
-
-from .types import MCPRequest, MCPResponse, ToolDefinition, ToolCallParams, ServerCapabilities
-from .tools.content import ContentTools
-from .tools.analysis import AnalysisTools
-from .handlers import RequestHandler
-from .errors import MCPError, ErrorCode
-
-logger = logging.getLogger(__name__)
-
-class MCPServer:
-    """Model Context Protocol server for AI News Aggregator."""
-    
-    def __init__(self):
-        """Initialize MCP server with tools."""
-        self.content_tools = ContentTools()
-        self.analysis_tools = AnalysisTools()
-        self.handler = RequestHandler(self)
-        self.tools = self._register_tools()
-        
-        logger.info("MCP Server initialized with %d tools", len(self.tools))
-    
-    def _register_tools(self) -> Dict[str, ToolDefinition]:
-        """Register all available tools."""
-        tools = {
-            "get_latest_arxiv_papers": ToolDefinition(
-                name="get_latest_arxiv_papers",
-                description="Fetch recent AI/ML papers from ArXiv",
-                input_schema={
-                    "type": "object",
-                    "properties": {
-                        "categories": {
-                            "type": "array",
-                            "items": {"type": "string"},
-                            "description": "ArXiv categories to search"
-                        },
-                        "max_results": {
-                            "type": "integer",
-                            "description": "Maximum papers to return",
-                            "default": 10
-                        },
-                        "days_back": {
-                            "type": "integer",
-                            "description": "How many days back to search",
-                            "default": 7
-                        }
-                    }
-                }
-            ),
-            "get_hackernews_stories": ToolDefinition(
-                name="get_hackernews_stories",
-                description="Fetch top HackerNews stories about AI/ML",
-                input_schema={
-                    "type": "object",
-                    "properties": {
-                        "story_type": {
-                            "type": "string",
-                            "enum": ["top", "new", "best"],
-                            "default": "top"
-                        },
-                        "limit": {
-                            "type": "integer",
-                            "default": 10
-                        },
-                        "min_score": {
-                            "type": "integer",
-                            "description": "Minimum story score",
-                            "default": 50
-                        }
-                    }
-                }
-            ),
-            "get_rss_feed_articles": ToolDefinition(
-                name="get_rss_feed_articles",
-                description="Fetch articles from configured RSS feeds",
-                input_schema={
-                    "type": "object",
-                    "properties": {
-                        "feed_names": {
-                            "type": "array",
-                            "items": {"type": "string"},
-                            "description": "Specific feed names to fetch"
-                        },
-                        "limit": {
-                            "type": "integer",
-                            "default": 20
-                        },
-                        "hours_back": {
-                            "type": "integer",
-                            "default": 24
-                        }
-                    }
-                }
-            ),
-            "search_content": ToolDefinition(
-                name="search_content",
-                description="Search across all aggregated AI/ML content",
-                input_schema={
-                    "type": "object",
-                    "properties": {
-                        "query": {
-                            "type": "string",
-                            "description": "Search query"
-                        },
-                        "source": {
-                            "type": "string",
-                            "enum": ["arxiv", "hackernews", "rss"],
-                            "description": "Optional source filter"
-                        },
-                        "limit": {
-                            "type": "integer",
-                            "default": 10
-                        },
-                        "min_relevance": {
-                            "type": "integer",
-                            "description": "Minimum relevance score (0-100)"
-                        }
-                    },
-                    "required": ["query"]
-                }
-            ),
-            "summarize_article": ToolDefinition(
-                name="summarize_article",
-                description="Generate AI summary of an article",
-                input_schema={
-                    "type": "object",
-                    "properties": {
-                        "article_id": {
-                            "type": "string",
-                            "description": "UUID of article in database"
-                        },
-                        "url": {
-                            "type": "string",
-                            "description": "URL of article to summarize"
-                        },
-                        "content": {
-                            "type": "string",
-                            "description": "Raw content to summarize"
-                        }
-                    }
-                }
-            ),
-            "generate_daily_digest": ToolDefinition(
-                name="generate_daily_digest",
-                description="Generate a daily digest of top AI/ML news",
-                input_schema={
-                    "type": "object",
-                    "properties": {
-                        "date": {
-                            "type": "string",
-                            "description": "Date for digest (YYYY-MM-DD)"
-                        },
-                        "min_relevance": {
-                            "type": "integer",
-                            "default": 70
-                        },
-                        "max_articles": {
-                            "type": "integer",
-                            "default": 10
-                        }
-                    }
-                }
-            )
+        // Check cache first
+        const cacheKey = `search:${query}:${source}:${limit}:${offset}`;
+        const cached = await env.CACHE?.get(cacheKey, "json");
+        if (cached) {
+          return {
+            content: [{
+              type: "text",
+              text: `**Cached Search Results**\n\nQuery: "${query}"\n${cached.total} total results\n\n\`\`\`json\n${JSON.stringify(cached.articles, null, 2)}\n\`\`\``
+            }]
+          };
         }
         
-        return tools
-    
-    async def execute_tool(self, name: str, arguments: Dict[str, Any]) -> Any:
-        """Execute a tool by name with arguments."""
-        # Map tool names to methods
-        tool_map = {
-            "get_latest_arxiv_papers": self.content_tools.get_latest_arxiv_papers,
-            "get_hackernews_stories": self.content_tools.get_hackernews_stories,
-            "get_rss_feed_articles": self.content_tools.get_rss_feed_articles,
-            "search_content": self.analysis_tools.search_content,
-            "summarize_article": self.analysis_tools.summarize_article,
-            "generate_daily_digest": self.analysis_tools.generate_daily_digest,
-        }
+        // Execute search
+        const result = await newsQueries.searchArticles(
+          env.DATABASE_URL,
+          query,
+          { source, limit, offset }
+        );
         
-        if name not in tool_map:
-            raise MCPError(ErrorCode.METHOD_NOT_FOUND, f"Tool '{name}' not found")
+        // Cache for 5 minutes
+        await env.CACHE?.put(cacheKey, JSON.stringify(result), { expirationTtl: 300 });
         
-        # Execute tool
-        result = await tool_map[name](**arguments)
-        return result
-    
-    async def handle_request(self, request_data: str) -> str:
-        """Handle incoming JSON-RPC request."""
-        try:
-            # Parse request
-            request_dict = json.loads(request_data)
-            request = MCPRequest(**request_dict)
-            
-            # Route to handler
-            result = await self.handler.handle(request)
-            
-            # Create response
-            response = MCPResponse(
-                jsonrpc="2.0",
-                result=result,
-                id=request.id
-            )
-            
-        except json.JSONDecodeError as e:
-            response = MCPResponse(
-                jsonrpc="2.0",
-                error={
-                    "code": ErrorCode.PARSE_ERROR,
-                    "message": "Parse error",
-                    "data": str(e)
-                }
-            )
-        except MCPError as e:
-            response = MCPResponse(
-                jsonrpc="2.0",
-                error={
-                    "code": e.code,
-                    "message": e.message,
-                    "data": e.data
-                },
-                id=request.id if 'request' in locals() else None
-            )
-        except Exception as e:
-            logger.error("Unexpected error: %s", e, exc_info=True)
-            response = MCPResponse(
-                jsonrpc="2.0",
-                error={
-                    "code": ErrorCode.INTERNAL_ERROR,
-                    "message": "Internal error",
-                    "data": str(e)
-                },
-                id=request.id if 'request' in locals() else None
-            )
+        const duration = Date.now() - startTime;
         
-        return response.model_dump_json()
-    
-    async def run(self):
-        """Run MCP server on stdio."""
-        logger.info("MCP Server starting on stdio")
-        
-        reader = asyncio.StreamReader()
-        protocol = asyncio.StreamReaderProtocol(reader)
-        await asyncio.get_event_loop().connect_read_pipe(lambda: protocol, sys.stdin)
-        
-        writer = sys.stdout
-        
-        while True:
-            try:
-                # Read line from stdin
-                line = await reader.readline()
-                if not line:
-                    break
-                
-                # Decode and handle request
-                request_data = line.decode('utf-8').strip()
-                if not request_data:
-                    continue
-                
-                logger.debug("Received request: %s", request_data[:100])
-                
-                # Process request
-                response = await self.handle_request(request_data)
-                
-                # Write response to stdout
-                writer.write(response.encode('utf-8'))
-                writer.write(b'\n')
-                writer.flush()
-                
-                logger.debug("Sent response: %s", response[:100])
-                
-            except KeyboardInterrupt:
-                logger.info("Server interrupted by user")
-                break
-            except Exception as e:
-                logger.error("Error in main loop: %s", e, exc_info=True)
-                # Continue running despite errors
-
-# Task 9: Server Entry Point
-# src/mcp_main.py
-#!/usr/bin/env python
-"""
-MCP Server entry point for AI News Aggregator.
-
-This starts the MCP server that exposes tools to AI assistants.
-"""
-
-import asyncio
-import logging
-import sys
-import os
-from pathlib import Path
-
-# Add src to path
-sys.path.insert(0, str(Path(__file__).parent))
-
-from src.mcp.server import MCPServer
-from src.config import get_settings
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    handlers=[
-        logging.StreamHandler(sys.stderr)  # Log to stderr to keep stdout clean
-    ]
-)
-
-logger = logging.getLogger(__name__)
-
-async def main():
-    """Main entry point for MCP server."""
-    try:
-        # Load settings
-        settings = get_settings()
-        logger.info("Starting AI News Aggregator MCP Server")
-        
-        # Validate required environment variables
-        if not settings.supabase_url or not settings.supabase_anon_key:
-            logger.error("Missing required environment variables (SUPABASE_URL, SUPABASE_ANON_KEY)")
-            sys.exit(1)
-        
-        # Create and run server
-        server = MCPServer()
-        await server.run()
-        
-    except KeyboardInterrupt:
-        logger.info("Server shutdown requested")
-    except Exception as e:
-        logger.error("Fatal error: %s", e, exc_info=True)
-        sys.exit(1)
-
-if __name__ == "__main__":
-    asyncio.run(main())
-```
-
-### Integration Points
-```yaml
-ENVIRONMENT:
-  - share: Same .env file as backend
-  - required: SUPABASE_URL, SUPABASE_ANON_KEY
-  - optional: GEMINI_API_KEY (for summarization)
-  
-DEPENDENCIES:
-  - add to: requirements.txt
-  - package: mcp
-  - existing: All backend dependencies already installed
-  
-BACKEND INTEGRATION:
-  - import: Direct Python imports from src/
-  - no HTTP: Don't use localhost API calls
-  - shared: Database connections, services, agents
-  
-CLAUDE CONFIG:
-  - file: claude_mcp_config.json
-  - command: python src/mcp_main.py
-  - env: Pass through required variables
-```
-
-## Validation Loop
-
-### Level 1: Syntax & Style
-```bash
-cd /Users/peterbrown/Documents/Code/ai-news-aggregator-agent
-source venv_linux/bin/activate
-
-# Check syntax
-ruff check src/mcp/ --fix
-mypy src/mcp/
-
-# Expected: No errors
-```
-
-### Level 2: Unit Tests
-```python
-# CREATE tests/test_mcp/test_tools.py
-import pytest
-from unittest.mock import Mock, AsyncMock
-from src.mcp.tools.content import ContentTools
-from src.mcp.types import ToolResult
-
-@pytest.mark.asyncio
-async def test_get_arxiv_papers():
-    """Test ArXiv paper fetching."""
-    tools = ContentTools()
-    
-    # Mock the fetcher
-    mock_articles = [Mock(
-        title="Test Paper",
-        author="Test Author",
-        url="https://arxiv.org/test",
-        content="Test content",
-        published_at=datetime.utcnow()
-    )]
-    
-    tools.arxiv.fetch = AsyncMock(return_value=mock_articles)
-    
-    result = await tools.get_latest_arxiv_papers(max_results=1)
-    
-    assert isinstance(result, ToolResult)
-    assert not result.is_error
-    assert len(result.content) == 1
-    assert "Test Paper" in result.content[0]["text"]
-
-@pytest.mark.asyncio
-async def test_search_content():
-    """Test content search."""
-    from src.mcp.tools.analysis import AnalysisTools
-    
-    tools = AnalysisTools()
-    
-    # Mock repository
-    mock_articles = [Mock(
-        title="ML Article",
-        source=Mock(value="arxiv"),
-        relevance_score=95,
-        url="https://test.com",
-        summary="Test summary"
-    )]
-    
-    tools.article_repo.search_articles = AsyncMock(return_value=(mock_articles, 1))
-    
-    result = await tools.search_content("machine learning", limit=1)
-    
-    assert isinstance(result, ToolResult)
-    assert not result.is_error
-    assert "ML Article" in str(result.content)
-
-# Run tests
-pytest tests/test_mcp/ -v
-```
-
-### Level 3: MCP Protocol Tests
-```python
-# CREATE tests/test_mcp/test_protocol.py
-import json
-import pytest
-from src.mcp.server import MCPServer
-
-@pytest.mark.asyncio
-async def test_tools_list():
-    """Test tools/list request."""
-    server = MCPServer()
-    
-    request = json.dumps({
-        "jsonrpc": "2.0",
-        "method": "tools/list",
-        "id": 1
-    })
-    
-    response = await server.handle_request(request)
-    response_data = json.loads(response)
-    
-    assert response_data["jsonrpc"] == "2.0"
-    assert "result" in response_data
-    assert "tools" in response_data["result"]
-    assert len(response_data["result"]["tools"]) == 6
-
-@pytest.mark.asyncio
-async def test_tool_call():
-    """Test tools/call request."""
-    server = MCPServer()
-    
-    # Mock the tool
-    server.content_tools.get_hackernews_stories = AsyncMock(
-        return_value=Mock(content=[{"type": "text", "text": "Test story"}])
-    )
-    
-    request = json.dumps({
-        "jsonrpc": "2.0",
-        "method": "tools/call",
-        "params": {
-            "name": "get_hackernews_stories",
-            "arguments": {"limit": 1}
-        },
-        "id": 2
-    })
-    
-    response = await server.handle_request(request)
-    response_data = json.loads(response)
-    
-    assert response_data["jsonrpc"] == "2.0"
-    assert "result" in response_data
-    assert response_data["id"] == 2
-
-@pytest.mark.asyncio
-async def test_invalid_method():
-    """Test invalid method handling."""
-    server = MCPServer()
-    
-    request = json.dumps({
-        "jsonrpc": "2.0",
-        "method": "invalid/method",
-        "id": 3
-    })
-    
-    response = await server.handle_request(request)
-    response_data = json.loads(response)
-    
-    assert "error" in response_data
-    assert response_data["error"]["code"] == -32601  # Method not found
-```
-
-### Level 4: Integration Test with Claude
-```bash
-# Create Claude configuration
-cat > ~/Library/Application\ Support/Claude/claude_desktop_config.json << 'EOF'
-{
-  "mcpServers": {
-    "ai-news-aggregator": {
-      "command": "python",
-      "args": ["/Users/peterbrown/Documents/Code/ai-news-aggregator-agent/src/mcp_main.py"],
-      "env": {
-        "SUPABASE_URL": "${SUPABASE_URL}",
-        "SUPABASE_ANON_KEY": "${SUPABASE_ANON_KEY}",
-        "GEMINI_API_KEY": "${GEMINI_API_KEY}"
+        return {
+          content: [{
+            type: "text",
+            text: `**Search Results**\n\nQuery: "${query}"\n${result.total} total results\nDuration: ${duration}ms\n\n\`\`\`json\n${JSON.stringify(result.articles, null, 2)}\n\`\`\``
+          }]
+        };
+      } catch (error) {
+        console.error("Search articles error:", error);
+        return {
+          content: [{
+            type: "text",
+            text: `**Error**\n\nFailed to search articles: ${error instanceof Error ? error.message : String(error)}`,
+            isError: true
+          }]
+        };
       }
+    }
+  );
+
+  // Tool 2: Get Latest Articles
+  server.tool(
+    "get_latest_articles",
+    "Get the most recent AI/ML news articles from the past N hours. Default is 24 hours.",
+    GetLatestArticlesSchema,
+    async ({ hours, source, limit }) => {
+      try {
+        const cacheKey = `latest:${hours}:${source}:${limit}`;
+        const cached = await env.CACHE?.get(cacheKey, "json");
+        if (cached) {
+          return {
+            content: [{
+              type: "text",
+              text: `**Cached Latest Articles**\n\nFrom past ${hours} hours\n${cached.length} articles\n\n\`\`\`json\n${JSON.stringify(cached, null, 2)}\n\`\`\``
+            }]
+          };
+        }
+        
+        const articles = await newsQueries.getLatestArticles(
+          env.DATABASE_URL,
+          hours,
+          { source, limit }
+        );
+        
+        // Cache for 10 minutes
+        await env.CACHE?.put(cacheKey, JSON.stringify(articles), { expirationTtl: 600 });
+        
+        return {
+          content: [{
+            type: "text",
+            text: `**Latest Articles**\n\nFrom past ${hours} hours\n${articles.length} articles found\n\n\`\`\`json\n${JSON.stringify(articles, null, 2)}\n\`\`\``
+          }]
+        };
+      } catch (error) {
+        console.error("Get latest articles error:", error);
+        return {
+          content: [{
+            type: "text",
+            text: `**Error**\n\nFailed to get latest articles: ${error instanceof Error ? error.message : String(error)}`,
+            isError: true
+          }]
+        };
+      }
+    }
+  );
+
+  // Tool 3: Get Statistics
+  server.tool(
+    "get_article_stats",
+    "Get comprehensive statistics about the AI news database including total articles, sources, and trends.",
+    {},
+    async () => {
+      try {
+        const stats = await newsQueries.getArticleStats(env.DATABASE_URL);
+        
+        return {
+          content: [{
+            type: "text",
+            text: `**Database Statistics**\n\n• Total Articles: ${stats.total_articles}\n• Last 24 Hours: ${stats.recent_24h}\n• Duplicates: ${stats.duplicates}\n• Unique Sources: ${stats.unique_sources}\n• Average Relevance: ${Math.round(stats.avg_relevance)}%\n\n\`\`\`json\n${JSON.stringify(stats, null, 2)}\n\`\`\``
+          }]
+        };
+      } catch (error) {
+        console.error("Get stats error:", error);
+        return {
+          content: [{
+            type: "text",
+            text: `**Error**\n\nFailed to get statistics: ${error instanceof Error ? error.message : String(error)}`,
+            isError: true
+          }]
+        };
+      }
+    }
+  );
+
+  // Tool 4: Get Daily Digests
+  server.tool(
+    "get_digests",
+    "Get paginated list of daily AI news digests with summaries and key developments.",
+    GetDigestsSchema,
+    async ({ page, per_page }) => {
+      try {
+        const result = await newsQueries.getDigests(
+          env.DATABASE_URL,
+          page,
+          per_page
+        );
+        
+        const totalPages = Math.ceil(result.total / per_page);
+        
+        return {
+          content: [{
+            type: "text",
+            text: `**Daily Digests**\n\nPage ${page} of ${totalPages}\nTotal: ${result.total} digests\n\n\`\`\`json\n${JSON.stringify(result.digests, null, 2)}\n\`\`\``
+          }]
+        };
+      } catch (error) {
+        console.error("Get digests error:", error);
+        return {
+          content: [{
+            type: "text",
+            text: `**Error**\n\nFailed to get digests: ${error instanceof Error ? error.message : String(error)}`,
+            isError: true
+          }]
+        };
+      }
+    }
+  );
+
+  // Tool 5: Get Single Digest
+  server.tool(
+    "get_digest_by_id",
+    "Get a specific daily digest with all its articles and detailed information.",
+    GetDigestByIdSchema,
+    async ({ digest_id }) => {
+      try {
+        const digest = await newsQueries.getDigestById(
+          env.DATABASE_URL,
+          digest_id
+        );
+        
+        if (!digest) {
+          return {
+            content: [{
+              type: "text",
+              text: `**Error**\n\nDigest not found with ID: ${digest_id}`,
+              isError: true
+            }]
+          };
+        }
+        
+        return {
+          content: [{
+            type: "text",
+            text: `**Daily Digest**\n\n${digest.title}\nDate: ${digest.date}\nArticles: ${digest.articles.length}\n\n**Summary:**\n${digest.summary}\n\n**Articles:**\n\`\`\`json\n${JSON.stringify(digest.articles, null, 2)}\n\`\`\``
+          }]
+        };
+      } catch (error) {
+        console.error("Get digest by ID error:", error);
+        return {
+          content: [{
+            type: "text",
+            text: `**Error**\n\nFailed to get digest: ${error instanceof Error ? error.message : String(error)}`,
+            isError: true
+          }]
+        };
+      }
+    }
+  );
+
+  // Tool 6: Get Sources Metadata
+  server.tool(
+    "get_sources",
+    "Get metadata about all AI news sources including article counts and activity status.",
+    {},
+    async () => {
+      try {
+        const sources = await newsQueries.getSourcesMetadata(env.DATABASE_URL);
+        
+        const activeSources = sources.filter(s => s.status === 'active').length;
+        
+        return {
+          content: [{
+            type: "text",
+            text: `**News Sources**\n\nTotal: ${sources.length} sources\nActive: ${activeSources} sources\n\n\`\`\`json\n${JSON.stringify(sources, null, 2)}\n\`\`\``
+          }]
+        };
+      } catch (error) {
+        console.error("Get sources error:", error);
+        return {
+          content: [{
+            type: "text",
+            text: `**Error**\n\nFailed to get sources: ${error instanceof Error ? error.message : String(error)}`,
+            isError: true
+          }]
+        };
+      }
+    }
+  );
+
+  console.log(`Registered 6 news tools for user: ${props.login}`);
+}
+```
+
+### Phase 3: Integration with Existing System
+
+**File:** `mcp-server/src/tools/register-tools.ts` (UPDATE EXISTING)
+
+```typescript
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { Props } from "../types";
+// Existing imports...
+import { registerDatabaseTools } from "../../examples/database-tools";
+import { registerNewsTools } from "./news-tools"; // NEW
+
+export function registerAllTools(server: McpServer, env: Env, props: Props) {
+  // Existing database tools
+  registerDatabaseTools(server, env, props);
+  
+  // NEW: Register AI news aggregator tools
+  registerNewsTools(server, env, props);
+  
+  // Future tools can be registered here
+  console.log(`All tools registered for user: ${props.login}`);
+}
+```
+
+### Phase 4: Environment Configuration
+
+**File:** `mcp-server/.dev.vars` (UPDATE)
+
+```env
+# Existing variables
+GITHUB_CLIENT_ID=your_existing_id
+GITHUB_CLIENT_SECRET=your_existing_secret
+COOKIE_ENCRYPTION_KEY=your_existing_key
+DATABASE_URL=postgresql://user:pass@host/db
+SENTRY_DSN=your_sentry_dsn
+
+# NEW: Add Supabase configuration
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=your-anon-key
+```
+
+**File:** `mcp-server/wrangler.jsonc` (UPDATE KV NAMESPACE)
+
+```jsonc
+{
+  "name": "ai-news-mcp-server",
+  "main": "src/index.ts",
+  // ... existing config ...
+  
+  "kv_namespaces": [
+    {
+      "binding": "OAUTH_KV",
+      "id": "existing-oauth-kv-id"
+    },
+    {
+      "binding": "CACHE",  // NEW: Add cache namespace
+      "id": "create-new-kv-namespace-id"
+    }
+  ]
+}
+```
+
+### Phase 5: Caching Strategy
+
+**File:** `mcp-server/src/cache/strategy.ts`
+
+```typescript
+export interface CacheConfig {
+  searchArticles: { ttl: 300 };      // 5 minutes
+  latestArticles: { ttl: 600 };      // 10 minutes  
+  articleStats: { ttl: 3600 };       // 1 hour
+  digests: { ttl: 3600 };            // 1 hour
+  sources: { ttl: 86400 };           // 24 hours
+}
+
+export class CacheManager {
+  constructor(private kv: KVNamespace) {}
+  
+  generateKey(operation: string, params: any): string {
+    return `${operation}:${JSON.stringify(params)}`;
+  }
+  
+  async get<T>(key: string): Promise<T | null> {
+    const value = await this.kv.get(key, "json");
+    return value as T;
+  }
+  
+  async set(key: string, value: any, ttlSeconds: number): Promise<void> {
+    await this.kv.put(key, JSON.stringify(value), {
+      expirationTtl: ttlSeconds
+    });
+  }
+  
+  async invalidatePattern(pattern: string): Promise<void> {
+    // List all keys matching pattern and delete
+    const list = await this.kv.list({ prefix: pattern });
+    for (const key of list.keys) {
+      await this.kv.delete(key.name);
     }
   }
 }
-EOF
-
-# Restart Claude Desktop
-# Test by asking Claude: "Can you search for recent transformer papers?"
 ```
 
-### Level 5: Rate Limit Verification
-```python
-# CREATE tests/test_mcp/test_rate_limits.py
-import time
-import pytest
-from src.mcp.tools.content import ContentTools
+## Testing Strategy
 
-@pytest.mark.asyncio
-async def test_arxiv_rate_limit():
-    """Verify ArXiv 3-second rate limit is respected."""
-    tools = ContentTools()
+### Unit Tests
+
+**File:** `mcp-server/tests/tools/news-tools.test.ts`
+
+```typescript
+import { describe, it, expect, vi } from 'vitest';
+import { registerNewsTools } from '../../src/tools/news-tools';
+import * as newsQueries from '../../src/database/news-queries';
+
+vi.mock('../../src/database/news-queries');
+
+describe('News Tools', () => {
+  it('should search articles with proper caching', async () => {
+    const mockResults = { articles: [], total: 0 };
+    vi.mocked(newsQueries.searchArticles).mockResolvedValue(mockResults);
     
-    # Time two consecutive calls
-    start = time.time()
+    // Test implementation
+  });
+  
+  it('should handle database errors gracefully', async () => {
+    vi.mocked(newsQueries.searchArticles).mockRejectedValue(
+      new Error('Database connection failed')
+    );
     
-    # First call
-    await tools.get_latest_arxiv_papers(max_results=1)
-    
-    # Second call
-    await tools.get_latest_arxiv_papers(max_results=1)
-    
-    elapsed = time.time() - start
-    
-    # Should take at least 3 seconds due to rate limit
-    assert elapsed >= 3.0, f"Rate limit not respected: {elapsed}s"
+    // Test error handling
+  });
+});
 ```
 
-## MCP Validation Commands
-```yaml
-# Use Supabase MCP to verify data access
-mcp__supabase__execute_sql:
-  query: |
-    SELECT COUNT(*) as article_count
-    FROM articles
-    WHERE created_at > NOW() - INTERVAL '24 hours';
-# Expected: Recent article count
+### MCP Inspector Testing
 
-# Test search functionality via database
-mcp__supabase__execute_sql:
-  query: |
-    SELECT title, source, relevance_score
-    FROM articles
-    WHERE title ILIKE '%transformer%'
-    LIMIT 5;
-# Expected: Articles matching search term
+```bash
+# Local testing with MCP Inspector
+npx @modelcontextprotocol/inspector@latest
+
+# Test each tool:
+# 1. search_articles with query "LLM"
+# 2. get_latest_articles with hours=24
+# 3. get_article_stats
+# 4. get_digests with page=1
+# 5. get_sources
 ```
 
-## Final Validation Checklist
-- [ ] All 14 tasks completed successfully
-- [ ] MCP Python SDK installed
-- [ ] 6 MVP tools implemented and tested
-- [ ] JSON-RPC 2.0 protocol compliance
-- [ ] Rate limits respected (ArXiv 3s verified)
-- [ ] Search returns results < 500ms
-- [ ] Summarization uses existing agents
-- [ ] Error handling with proper codes
-- [ ] All unit tests pass
-- [ ] Protocol tests pass
-- [ ] Claude Desktop integration works
-- [ ] No duplicate backend logic (direct imports)
-- [ ] Logging to stderr (stdout clean for MCP)
-- [ ] Environment variables validated
+## Validation Gates
+
+```bash
+# 1. TypeScript compilation
+npm run type-check
+
+# 2. Unit tests
+npm test
+
+# 3. Wrangler validation
+wrangler deploy --dry-run
+
+# 4. Database schema validation (via MCP)
+mcp__supabase__get_advisors(type="security")  # Check for missing RLS policies
+mcp__supabase__get_advisors(type="performance")  # Check for missing indexes
+
+# 5. Local development testing
+wrangler dev
+# Then test with curl:
+curl http://localhost:8792/mcp \
+  -H "Authorization: Bearer test-token" \
+  -d '{"method": "tools/list"}'
+```
+
+## Performance Optimizations
+
+1. **Connection Pooling**: Already implemented with max 5 connections
+2. **KV Caching**: Cache expensive queries for 5-60 minutes
+3. **Query Optimization**: Use indexes on `published_at`, `source`, `relevance_score`
+4. **Pagination**: Limit default results to 20-50 items
+5. **Edge Computing**: Cloudflare Workers run at edge locations globally
+
+## Security Considerations
+
+1. **SQL Injection**: Use existing `validateSqlQuery()` from `database/security.ts`
+2. **Input Validation**: Zod schemas on all tool inputs
+3. **Rate Limiting**: Cloudflare provides automatic DDoS protection
+4. **Authentication**: GitHub OAuth already implemented
+5. **Authorization**: Keep write operations limited to ALLOWED_USERNAMES
+
+## Deployment Instructions
+
+```bash
+# 1. Install dependencies
+cd mcp-server
+npm install
+
+# 2. Create KV namespace for caching
+wrangler kv:namespace create "CACHE"
+# Copy the ID to wrangler.jsonc
+
+# 3. Set production secrets
+wrangler secret put DATABASE_URL
+wrangler secret put SUPABASE_URL
+wrangler secret put SUPABASE_ANON_KEY
+
+# 4. Deploy to Cloudflare
+wrangler deploy
+
+# 5. Test production endpoint
+curl https://your-worker.workers.dev/mcp \
+  -H "Authorization: Bearer your-token"
+```
+
+## MCP Client Configuration
+
+**For Claude Desktop:**
+```json
+{
+  "mcpServers": {
+    "ai-news": {
+      "command": "npx",
+      "args": ["mcp-remote", "https://your-worker.workers.dev/mcp"],
+      "env": {}
+    }
+  }
+}
+```
+
+## Monitoring & Observability
+
+1. **Cloudflare Analytics**: Built-in request metrics
+2. **Sentry Integration**: Already configured in `index_sentry.ts`
+3. **Structured Logging**: Log tool usage, errors, performance
+4. **KV Analytics**: Monitor cache hit rates
+
+## Common Issues & Solutions
+
+1. **Database Connection Errors**
+   - Check DATABASE_URL is correctly set
+   - Verify Supabase allows connections from Cloudflare IPs
+   
+2. **OAuth Issues**
+   - Ensure GitHub OAuth app callback URL matches Worker URL
+   
+3. **Performance Issues**
+   - Check KV cache is working (monitor hit rates)
+   - Review slow queries with `mcp__supabase__get_logs(service="postgres")`
+
+## Success Metrics
+
+- [ ] All 6 news tools successfully registered
+- [ ] Cache hit rate > 50% after warm-up
+- [ ] Average response time < 500ms
+- [ ] Zero SQL injection vulnerabilities
+- [ ] Successfully tested with Claude Desktop
+
+## Documentation Links
+
+- MCP Protocol: https://spec.modelcontextprotocol.io/
+- Cloudflare Workers: https://developers.cloudflare.com/workers/
+- Supabase TypeScript Client: https://supabase.com/docs/reference/javascript/introduction
+- Existing MCP Server Docs: See `mcp-server/CLAUDE.md`
+
+## Agent Instructions
+
+**To: backend-api-architect agent**
+
+You are extending an existing, production-ready MCP server. DO NOT rebuild from scratch. The authentication, database connection, and tool registration systems already work perfectly.
+
+Your task:
+1. Port the SQL queries from Python to TypeScript (see Phase 1)
+2. Create news-specific tools following existing patterns (see Phase 2)
+3. Add tools to the registration system (see Phase 3)
+4. Implement KV caching for performance (see Phase 5)
+5. Write comprehensive tests
+
+Use the existing patterns from `examples/database-tools.ts` as your template. The database connection, security validation, and error handling are already implemented - just use them.
+
+Remember: This is a PUBLIC MCP server. No write operations for regular users. Only read operations are allowed.
 
 ---
 
-## Anti-Patterns to Avoid
-- ❌ Don't make HTTP calls to backend - use direct imports
-- ❌ Don't bypass ArXiv 3-second rate limit
-- ❌ Don't log to stdout - use stderr only
-- ❌ Don't use camelCase tool names - use snake_case
-- ❌ Don't create new database connections - reuse backend
-- ❌ Don't implement sync tools - all must be async
-- ❌ Don't skip JSON-RPC format validation
-- ❌ Don't hardcode credentials - use environment
+**Confidence Score: 9/10**
 
-## Performance Notes
-1. **Direct Imports**: Zero network overhead by importing backend
-2. **Rate Limiting**: Inherited from backend fetchers automatically
-3. **Async Everything**: Non-blocking tool execution
-4. **Connection Pooling**: Reuse Supabase client from backend
-5. **Caching**: Leverage existing backend caches
-
-## MCP Tool Usage
-- **Context7**: Get MCP Python SDK documentation
-- **Supabase**: Verify database queries work correctly
-- **IDE Diagnostics**: Type checking and validation
-
-## Score: 9/10
-High confidence due to:
-- Existing backend provides all functionality
-- Clear MCP specification to follow
-- Direct service imports (no reimplementation)
-- Comprehensive test coverage included
-- Rate limiting already handled in backend
-
-The 1-point deduction is for potential complexity in Claude Desktop configuration and environment variable passing.
+This PRP provides comprehensive guidance for implementing AI news aggregator tools on top of the existing MCP server infrastructure. The existing codebase is well-architected, so success probability is very high by following these patterns.
