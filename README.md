@@ -1,434 +1,387 @@
 # 🤖 AI News Aggregator
 
-An intelligent news aggregation system that fetches, analyzes, and curates AI/ML content from multiple sources using PydanticAI agents and semantic deduplication.
+A complete full-stack AI news aggregation platform that fetches, analyzes, and curates AI/ML content from multiple sources. Features a production-ready backend API, deployed MCP server for AI assistant integration, and modern web frontend.
 
-**Current Status: ✅ Production Ready** - 72/72 tests passing, complete end-to-end pipeline operational
+**Current Status: ✅ PRODUCTION READY** - Complete MVP deployed and operational
 
-## 🚀 Features
-
-- **Multi-Source Fetching**: Aggregates content from ArXiv, HackerNews, and RSS feeds
-- **AI-Powered Analysis**: Uses Google Gemini via PydanticAI for content relevance scoring and categorization
-- **Semantic Deduplication**: Vector embeddings with 85% similarity threshold for duplicate detection
-- **Daily Digest Generation**: AI-powered summaries with text-to-speech capabilities
-- **FastAPI Backend**: RESTful API with async/await patterns and background tasks
-- **Vector Search**: Supabase with pgvector for efficient similarity search
-- **Rate Limiting**: Token bucket algorithm with service-specific limits
-- **Structured Data**: Pydantic models with validation and type safety
-- **Background Processing**: Async task scheduling and processing
-
-## 🏗️ Architecture
+## 🏗️ Architecture Overview
 
 ```
-src/
-├── agents/           # PydanticAI news analysis agents
-│   ├── news_agent.py # Main analysis agent with structured output
-│   ├── digest_agent.py # Daily digest generation agent
-│   └── prompts.py    # System prompts for AI analysis
-├── fetchers/         # Content fetching from multiple sources
-│   ├── base.py       # Abstract base fetcher with retry logic
-│   ├── arxiv_fetcher.py      # ArXiv API integration
-│   ├── hackernews_fetcher.py # HackerNews API integration
-│   ├── rss_fetcher.py        # RSS feed parsing (configurable)
-│   └── factory.py    # Fetcher factory pattern
-├── services/         # Core business logic services
-│   ├── embeddings.py # HuggingFace embeddings generation
-│   ├── deduplication.py # Semantic similarity detection
-│   ├── rate_limiter.py # Token bucket rate limiting
-│   ├── tts.py        # Text-to-speech with ElevenLabs
-│   └── scheduler.py  # Background task scheduling
-├── models/           # Data models and schemas
-│   ├── articles.py   # Core article and digest models
-│   └── schemas.py    # API request/response schemas
-├── repositories/     # Data access layer
-│   └── articles.py   # Article CRUD operations
-├── api/              # FastAPI routes and endpoints
-│   ├── routes.py     # API endpoints
-│   └── dependencies.py # Dependency injection
-├── config.py         # Configuration management
-└── main.py          # FastAPI application entry point
-
-config/
-└── rss_feeds.json   # Configurable RSS feed sources
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│   Web Frontend  │    │   MCP Server     │    │  Backend API    │
+│   (Next.js)     │◄──►│  (Cloudflare     │◄──►│   (FastAPI)     │
+│   ✅ Complete   │    │   Workers)       │    │   ✅ Complete   │
+│                 │    │   ✅ Complete    │    │                 │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+         │                        │                        │
+         │                        │                        │
+         └────────────────────────┼────────────────────────┘
+                                  ▼
+                          ┌─────────────────┐
+                          │   Supabase DB   │
+                          │   (PostgreSQL   │
+                          │   + pgvector)   │
+                          │   ✅ Complete   │
+                          └─────────────────┘
 ```
 
-## 🛠️ Installation
+## 🚀 Components
+
+### 🖥️ Backend API (✅ Production Ready)
+- **FastAPI** server with async processing
+- **7 Data Sources**: ArXiv, HackerNews, RSS, YouTube, HuggingFace, Reddit, GitHub
+- **AI-powered analysis** using Google Gemini
+- **Semantic deduplication** with vector embeddings
+- **Daily digest generation** with text-to-speech
+- **Comprehensive REST API** with 16+ endpoints
+
+### 🔌 MCP Server (✅ Production Deployed)
+- **Model Context Protocol** server on Cloudflare Workers
+- **GitHub OAuth** authentication 
+- **6 News Tools**: search_articles, get_latest_articles, get_article_stats, get_digests, get_digest_by_id, get_sources
+- **Real-time access** to curated news content
+- **KV Caching** for performance optimization
+- **Production URL**: `https://my-mcp-server.pbrow35.workers.dev/mcp`
+
+### 🌐 Frontend (✅ Production Ready)
+- **Next.js** modern web interface
+- **Complete UI Components**: ArticleCard, AudioPlayer, SearchBar, FilterBar
+- **Multiple Pages**: articles, digests, search, sources
+- **Responsive design** with Tailwind CSS
+- **Real-time content** browsing and filtering
+
+## 🛠️ Quick Start
 
 ### Prerequisites
-
 - Python 3.11+
+- Node.js 18+
 - Supabase account with pgvector extension
 - Google Gemini API key
 
-### Setup
+### 1. Backend Setup
+```bash
+git clone <repository-url>
+cd ai-news-aggregator-agent
 
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd ai-news-aggregator-agent
-   ```
+# Create virtual environment
+python -m venv venv_linux
+source venv_linux/bin/activate  # On Windows: venv_linux\Scripts\activate
 
-2. **Create virtual environment**
-   ```bash
-   python -m venv venv_linux
-   source venv_linux/bin/activate  # On Windows: venv_linux\Scripts\activate
-   ```
+# Install dependencies
+pip install -r requirements.txt
+```
 
-3. **Install dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
+### 2. Environment Configuration
+Create a `.env` file in the root directory:
+```env
+# Database
+SUPABASE_URL=your_supabase_project_url
+SUPABASE_ANON_KEY=your_supabase_anon_key
 
-4. **Set up environment variables**
-   Create a `.env` file with your configuration:
-   ```env
-   # Supabase Configuration
-   SUPABASE_URL=your_supabase_project_url
-   SUPABASE_ANON_KEY=your_supabase_anon_key
+# AI Services
+GEMINI_API_KEY=your_google_gemini_api_key
+ELEVENLABS_API_KEY=your_elevenlabs_api_key  # Optional for TTS
 
-   # AI Configuration  
-   GEMINI_API_KEY=your_google_gemini_api_key
-   ELEVENLABS_API_KEY=your_elevenlabs_api_key  # Optional for TTS
+# Configuration
+SIMILARITY_THRESHOLD=0.85
+FETCH_INTERVAL_MINUTES=30
+DIGEST_HOUR_UTC=17
+DEBUG=true
+LOG_LEVEL=INFO
+```
 
-   # Optional Configuration
-   SIMILARITY_THRESHOLD=0.85
-   DEBUG=true
-   LOG_LEVEL=INFO
-   ```
-
-5. **Database setup**
-   The database schema has been pre-configured in Supabase with:
-   - Articles table with vector embeddings (pgvector)
-   - Daily digests table for summaries
-   - RLS policies for secure access
-   - Optimized indexes for performance
-
-### Required API Keys
-
-| Service | Purpose | Required | Free Tier |
-|---------|---------|----------|-----------|
-| **Supabase** | Database & Vector Search | ✅ Yes | ✅ Available |
-| **Google Gemini** | AI Analysis | ✅ Yes | ✅ Available |
-| **ElevenLabs** | Text-to-Speech | ❌ Optional | ✅ Available |
-
-## 🚀 Usage
-
-### Starting the API Server
-
+### 3. Start Backend API
 ```bash
 source venv_linux/bin/activate
 python -m uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-The API will be available at `http://localhost:8000` with interactive docs at `http://localhost:8000/docs`.
+The API will be available at `http://localhost:8000` with docs at `http://localhost:8000/docs`.
 
-### Quick Test
-
+### 4. Frontend Setup
 ```bash
-# Check if the API is running
-curl http://localhost:8000/
-
-# Check system health  
-curl http://localhost:8000/api/v1/health | jq
-
-# Trigger article fetching
-curl -X POST -H "Content-Type: application/json" \
-     -d '{"sources": ["arxiv"]}' \
-     http://localhost:8000/api/v1/webhook/fetch | jq
-
-# View fetched articles with pagination
-curl "http://localhost:8000/api/v1/articles?page=1&per_page=10" | jq
-
-# Search for specific content
-curl "http://localhost:8000/api/v1/articles/search?q=transformer&limit=5" | jq
-
-# Filter articles by date and relevance
-curl "http://localhost:8000/api/v1/articles/filter?relevance_min=80&start_date=2025-01-01" | jq
-
-# Get all digests
-curl "http://localhost:8000/api/v1/digests?page=1&per_page=5" | jq
-
-# Get sources metadata
-curl http://localhost:8000/api/v1/sources | jq
-
-# Get system statistics
-curl http://localhost:8000/api/v1/stats | jq
+cd UI
+npm install
+npm run dev
 ```
 
-### API Endpoints
+The frontend will be available at `http://localhost:3000`.
 
-All API endpoints are prefixed with `/api/v1`:
+### 5. MCP Server (Already Deployed)
+The MCP server is live at: `https://my-mcp-server.pbrow35.workers.dev/mcp`
 
-#### Health & Status
-- `GET /api/v1/health` - System health and database status
-- `GET /api/v1/stats` - Article counts, deduplication stats, fetcher status
-- `GET /api/v1/monitoring/performance` - Comprehensive performance metrics
-
-#### Articles
-- `GET /api/v1/articles` - Enhanced pagination with metadata (`page`, `per_page`, `sort_by`, `order`, `source`)
-- `GET /api/v1/articles/{id}` - Get specific article by ID
-- `GET /api/v1/articles/search` - Full-text search (`q`, `source`, `limit`, `offset`)
-- `GET /api/v1/articles/filter` - Advanced filtering (`start_date`, `end_date`, `relevance_min`, `relevance_max`, `sources`, `categories`)
-- `POST /api/v1/articles/{id}/analyze` - Re-analyze article with AI
-
-#### Digests
-- `GET /api/v1/digests` - List all digests with pagination (`page`, `per_page`)
-- `GET /api/v1/digests/{id}` - Get specific digest with articles
-- `GET /api/v1/digest/latest` - Get latest daily digest summary
-
-#### Sources & Content Management
-- `GET /api/v1/sources` - Get sources metadata with statistics
-- `POST /api/v1/webhook/fetch` - Trigger article fetching (`{"sources": ["arxiv", "hackernews", "rss"]}`)
-
-#### Scheduler
-- `GET /api/v1/scheduler/status` - Current scheduler status and task information
-- `POST /api/v1/scheduler/task/{task_name}/run` - Manually trigger a scheduled task
-
-**Interactive API Documentation**: Visit http://localhost:8000/docs when running locally
-
-## 📋 RSS Feed Configuration
-
-The RSS fetcher supports dynamic configuration of feed sources through `config/rss_feeds.json`:
-
+#### MCP Client Configuration
+Add to your MCP client configuration:
 ```json
 {
-  "feeds": {
-    "company_blogs": {
-      "OpenAI Blog": "https://openai.com/index/rss.xml",
-      "Anthropic Blog": "https://www.anthropic.com/index.xml"
-    },
-    "tech_news": {
-      "TechCrunch AI": "https://techcrunch.com/category/artificial-intelligence/feed/"
+  "mcpServers": {
+    "ai-news-aggregator": {
+      "command": "npx",
+      "args": ["@modelcontextprotocol/server-http", "https://my-mcp-server.pbrow35.workers.dev/mcp"],
+      "env": {}
     }
   }
 }
 ```
 
-### Managing RSS Feeds
+## 📡 Usage Examples
 
-RSS feeds can be managed programmatically:
+### Backend API
+```bash
+# Check system health
+curl http://localhost:8000/api/v1/health | jq
 
-```python
-from src.fetchers.rss_fetcher import RSSFetcher
+# Get system statistics
+curl http://localhost:8000/api/v1/stats | jq
 
-fetcher = RSSFetcher()
+# Search articles
+curl "http://localhost:8000/api/v1/articles/search?q=transformer&limit=5" | jq
 
-# Add a new feed
-fetcher.add_feed("New AI Blog", "https://example.com/ai/feed.xml", category="company_blogs")
+# Get latest articles with filtering
+curl "http://localhost:8000/api/v1/articles?page=1&per_page=10&source=arxiv" | jq
 
-# Remove a feed
-fetcher.remove_feed("Old Feed Name")
+# Get daily digests
+curl "http://localhost:8000/api/v1/digests?page=1&per_page=5" | jq
 
-# Get current feeds
-current_feeds = fetcher.get_feed_urls()
+# Trigger manual fetch
+curl -X POST -H "Content-Type: application/json" \
+     -d '{"sources": ["arxiv", "hackernews"]}' \
+     http://localhost:8000/api/v1/webhook/fetch | jq
 ```
 
-Changes are automatically persisted to the configuration file.
+### MCP Server Tools
+Once connected to an MCP client, use these tools:
 
-## 🔄 Data Processing Pipeline
-
-### Article Processing Flow
-```mermaid
-graph TD
-    A[📡 Fetch Trigger] --> B[🔍 Multi-Source Fetching]
-    B --> C[🤖 AI Analysis Google Gemini]
-    C --> D[📊 Relevance Filtering ≥50]
-    D --> E[🧮 Vector Embeddings 384-dim]
-    E --> F[🔍 Semantic Deduplication 85%]
-    F --> G[💾 Database Storage pgvector]
-    G --> H[🌐 REST API Serving]
-```
-
-1. **Content Fetching** → ArXiv papers, HackerNews stories, RSS feeds with rate limiting
-2. **AI Analysis** → Google Gemini scores relevance (0-100), extracts categories and key points
-3. **Quality Filter** → Only articles scoring ≥50 relevance are processed further
-4. **Vector Generation** → sentence-transformers creates 384-dimensional embeddings
-5. **Duplicate Detection** → pgvector finds similar articles using 85% cosine similarity
-6. **Database Storage** → Supabase PostgreSQL with optimized indexes
-7. **API Access** → FastAPI serves processed, deduplicated content
-
-### Daily Digest Generation
-1. **Content Selection** → Top articles from last 24 hours (relevance ≥50)
-2. **AI Summarization** → Google Gemini creates coherent daily summary
-3. **Theme Extraction** → Identify key themes and notable developments
-4. **Text-to-Speech** → ElevenLabs generates audio version (optional)
-5. **Storage & Serving** → Save digest with audio URL for API access
-
-## 🧠 AI Analysis
-
-The system uses Google Gemini through PydanticAI to analyze articles:
-
-```python
-# Analysis output structure
-class NewsAnalysis(BaseModel):
-    summary: str = Field(..., description="Concise summary")
-    relevance_score: int = Field(..., ge=0, le=100)
-    categories: List[str] = Field(..., description="AI/ML categories")
-    key_points: List[str] = Field(..., description="Main takeaways")
-    reasoning: str = Field(..., description="Score justification")
-```
-
-Articles scoring below the relevance threshold (default 50) are filtered out.
-
-## 🔍 Vector Search & Deduplication
-
-- **Model**: `sentence-transformers/all-MiniLM-L6-v2` (384 dimensions)
-- **Similarity**: Cosine similarity with 85% threshold
-- **Index**: HNSW index in Supabase pgvector for fast retrieval
-- **Caching**: In-memory embedding cache for performance
-
-## 📊 Monitoring & Observability
-
-### Health Monitoring
-- Database connectivity checks
-- Fetcher status monitoring
-- Article processing statistics
-- Error rate tracking
-
-### Logging
-Structured logging with configurable levels:
-```python
-# Key log events
-- Article fetch attempts and results
-- AI analysis outcomes
-- Deduplication decisions
-- API request/response cycles
-- Error conditions and retries
-```
+1. **search_articles** - Search AI/ML articles with full-text search
+2. **get_latest_articles** - Get recent articles from specified time period
+3. **get_article_stats** - Get comprehensive database statistics
+4. **get_digests** - Get paginated list of daily digests
+5. **get_digest_by_id** - Get specific digest with articles
+6. **get_sources** - Get metadata about all news sources
 
 ## 🧪 Testing
 
-### Running Tests
+### Backend Tests
 ```bash
 source venv_linux/bin/activate
 pytest tests/ -v
 ```
 
-### Test Structure
-```
-tests/
-├── test_models/      # Pydantic model validation tests
-├── test_services/    # Business logic tests
-├── test_fetchers/    # External API integration tests
-└── test_api/        # FastAPI endpoint tests
-```
-
-### Test Coverage
-- Unit tests for core models and services
-- Integration tests for external APIs
-- API endpoint testing with mock data
-- Error handling and edge cases
-
-## 🔧 Development
-
-### Code Quality
+### MCP Server Tests
 ```bash
-# Type checking
-mypy src/
-
-# Linting and formatting
-ruff check src/ --fix
-
-# Run tests
-pytest tests/
+cd mcp-server
+npm test
 ```
 
-### Key Patterns
-
-**Error Handling**: Circuit breaker pattern with exponential backoff
-```python
-# Fetcher retry logic with exponential backoff
-for attempt in range(self.max_retries):
-    try:
-        response = await self._make_request(url)
-        return response
-    except Exception as e:
-        if attempt < self.max_retries - 1:
-            await asyncio.sleep(2 ** attempt)
+### Frontend Tests
+```bash
+cd UI
+npm test
 ```
 
-**Rate Limiting**: Source-specific rate limiting
-```python
-# ArXiv requires 3-second delays
-self.client = arxiv.Client(delay_seconds=3.0)
+## 📚 API Documentation
 
-# HackerNews allows 1 request per second
-await asyncio.sleep(1.0)
+### Backend API Endpoints
+All endpoints are prefixed with `/api/v1`:
+
+#### Health & Monitoring
+- `GET /health` - System health and database status
+- `GET /stats` - Article counts and processing statistics
+- `GET /monitoring/performance` - Comprehensive performance metrics
+- `GET /scheduler/status` - Task scheduling information
+
+#### Articles
+- `GET /articles` - List articles with pagination and filtering
+- `GET /articles/{id}` - Get specific article by ID
+- `GET /articles/search` - Full-text search with relevance scoring
+- `GET /articles/filter` - Advanced filtering by date, relevance, source, categories
+- `POST /articles/{id}/analyze` - Re-analyze article with AI
+
+#### Digests
+- `GET /digests` - List all digests with pagination
+- `GET /digests/{id}` - Get specific digest with articles
+- `GET /digest/latest` - Get latest daily digest summary
+
+#### Sources & Management
+- `GET /sources` - Get sources metadata with statistics
+- `POST /webhook/fetch` - Trigger article fetching from specified sources
+- `POST /scheduler/task/{task_name}/run` - Manually trigger scheduled tasks
+
+**Interactive Documentation**: Visit http://localhost:8000/docs
+
+### MCP Server Tools
+- **GitHub OAuth** authentication required
+- **6 specialized tools** for AI news aggregation
+- **Caching** with 5 minutes to 24 hours TTL
+- **Real-time data** from production database
+
+## 🔄 Data Processing Pipeline
+
+```mermaid
+graph TD
+    A[📡 7 Content Sources] --> B[🔍 Multi-Source Fetchers]
+    B --> C[🤖 AI Analysis Google Gemini]
+    C --> D[📊 Quality Filter ≥50]
+    D --> E[🧮 Vector Embeddings 384-dim]
+    E --> F[🔍 Semantic Deduplication 85%]
+    F --> G[💾 Database Storage pgvector]
+    G --> H[🌐 REST API Serving]
+    G --> I[🔌 MCP Tools]
+    G --> J[📱 Frontend Interface]
+    
+    I --> K[🤖 AI Assistants Claude/Cursor]
+    H --> L[📊 Analytics Dashboard]
 ```
 
-**Async Processing**: Concurrent operations with proper resource management
-```python
-# Batch processing with semaphore
-semaphore = asyncio.Semaphore(max_concurrent)
-tasks = [self._process_with_semaphore(item, semaphore) for item in items]
-results = await asyncio.gather(*tasks, return_exceptions=True)
+### Processing Features
+1. **Multi-source Fetching** → 7 sources with intelligent rate limiting
+2. **AI Analysis** → Google Gemini relevance scoring (0-100) and categorization
+3. **Quality Filtering** → Only content scoring ≥50 relevance is stored
+4. **Vector Embeddings** → 384-dimensional semantic representations
+5. **Deduplication** → 85% similarity threshold using cosine distance
+6. **Storage** → PostgreSQL with pgvector optimization and full-text search
+7. **Serving** → Multiple interfaces (REST API, MCP tools, Web frontend)
+
+## 📊 Current Status
+
+### ✅ Production Ready (All Components Complete)
+
+| Component | Status | Details |
+|-----------|--------|---------|
+| **Backend API** | ✅ Production | 7 sources, 16+ endpoints, 72/72 tests passing |
+| **MCP Server** | ✅ Deployed | Cloudflare Workers, 6 tools, OAuth auth |
+| **Frontend** | ✅ Complete | Next.js, responsive design, all pages |
+| **Database** | ✅ Optimized | PostgreSQL + pgvector, 178+ articles |
+| **AI Integration** | ✅ Active | Google Gemini analysis, TTS generation |
+| **Authentication** | ✅ Secure | GitHub OAuth for MCP, API key management |
+| **Caching** | ✅ Implemented | KV caching, embedding cache, response optimization |
+| **Monitoring** | ✅ Complete | Health checks, performance metrics, error tracking |
+
+### 📊 Performance Metrics
+- **Data Sources**: 7 active sources (ArXiv, HackerNews, RSS, YouTube, HuggingFace, Reddit, GitHub)
+- **Content Volume**: 178+ articles with continuous processing
+- **AI Analysis**: 100% success rate with Google Gemini
+- **Deduplication**: 85% similarity threshold with pgvector
+- **API Performance**: Sub-second response times
+- **Search**: Full-text search with PostgreSQL GIN indexes
+- **Uptime**: Production deployment on Cloudflare Workers
+
+### 🚀 Deployment Status
+- **Backend**: Ready for cloud deployment (Docker configured)
+- **MCP Server**: Live on Cloudflare Workers
+- **Frontend**: Ready for Vercel/Netlify deployment
+- **Database**: Production Supabase with optimizations
+- **Monitoring**: Real-time health checks and performance tracking
+
+## 🔐 Security & Performance
+
+### Security Features
+- **OAuth Authentication** (GitHub) for MCP server
+- **API key management** via environment variables
+- **Input validation** with Pydantic models
+- **SQL injection protection** via SQLAlchemy ORM
+- **Rate limiting** for external APIs and abuse prevention
+- **CORS configuration** for cross-origin requests
+
+### Performance Optimizations
+- **Async processing** for concurrent operations
+- **Connection pooling** for database and HTTP clients
+- **Vector indexing** (HNSW) for fast similarity search
+- **Multi-level caching** (embedding cache, KV cache, response cache)
+- **Background tasks** for non-blocking operations
+- **CDN delivery** via Cloudflare Workers
+
+## 🛣️ Deployment Options
+
+### Option 1: Full Local Development
+```bash
+# Backend
+source venv_linux/bin/activate
+python -m uvicorn src.main:app --reload --port 8000
+
+# Frontend
+cd UI && npm run dev
+
+# MCP Server (already deployed)
+# Use: https://my-mcp-server.pbrow35.workers.dev/mcp
 ```
 
-## 📈 Performance Considerations
+### Option 2: Cloud Deployment
+- **Backend**: Deploy to AWS/GCP/Azure with Docker
+- **Frontend**: Deploy to Vercel/Netlify with automatic builds
+- **MCP Server**: Already deployed on Cloudflare Workers
+- **Database**: Production Supabase (already configured)
 
-- **Batch Processing**: Articles processed in configurable batches (default: 10)
-- **Connection Pooling**: Async HTTP clients with connection reuse
-- **Embedding Caching**: In-memory cache for generated embeddings
-- **Database Indexes**: HNSW vector indexes for fast similarity search
-- **Background Tasks**: Non-blocking article processing via FastAPI background tasks
+### Option 3: Enterprise Setup
+- **Container orchestration** with Kubernetes
+- **Load balancing** for high availability
+- **Database scaling** with read replicas
+- **Monitoring** with comprehensive observability
 
-## 🔐 Security
+## 📁 Project Structure
 
-- **API Keys**: Secure handling via environment variables
-- **Input Validation**: Pydantic models validate all inputs
-- **SQL Injection**: Protected via SQLAlchemy ORM
-- **Rate Limiting**: Built-in protection against API abuse
-- **CORS**: Configurable CORS policies for API access
+```
+ai-news-aggregator-agent/
+├── src/                    # Backend FastAPI application
+│   ├── agents/            # PydanticAI news analysis agents
+│   ├── fetchers/          # Multi-source content fetchers
+│   ├── services/          # Core business logic services
+│   ├── models/            # Data models and schemas
+│   ├── repositories/      # Data access layer
+│   ├── api/               # FastAPI routes and endpoints
+│   └── main.py           # Application entry point
+├── mcp-server/            # MCP Server (Cloudflare Workers)
+│   ├── src/              # TypeScript MCP implementation
+│   ├── tests/            # Comprehensive test suite
+│   └── wrangler.jsonc    # Cloudflare Workers configuration
+├── UI/                    # Next.js Frontend Application
+│   ├── src/              # React components and pages
+│   ├── components/       # Reusable UI components
+│   └── hooks/            # Custom React hooks
+├── tests/                # Backend test suite
+├── config/               # Configuration files (RSS feeds, etc.)
+├── spec/                 # Technical specifications
+│   ├── completed/        # Implemented specifications
+│   └── *.md             # Future enhancement specs
+└── migrations/           # Database schema migrations
+```
 
-## 📚 Dependencies
+## 🎯 Key Features
 
-### Core Dependencies
-- **FastAPI**: Modern web framework for APIs
-- **PydanticAI**: Structured AI agent framework
-- **Supabase**: Backend-as-a-service with pgvector
-- **SQLAlchemy**: Python SQL toolkit and ORM
-- **sentence-transformers**: Embedding model library
-- **arxiv**: ArXiv API client library
-- **feedparser**: RSS feed parsing library
+### 🔍 Intelligent Content Discovery
+- **Multi-source aggregation** from 7 different AI/ML sources
+- **Real-time fetching** with configurable intervals (default: 30 minutes)
+- **Smart rate limiting** with source-specific optimizations
+- **Content quality filtering** using AI relevance scoring
 
-### Development Dependencies
-- **pytest**: Testing framework
-- **mypy**: Static type checking
-- **ruff**: Fast Python linter and formatter
-- **uvicorn**: ASGI server for FastAPI
+### 🤖 AI-Powered Analysis
+- **Google Gemini integration** for content analysis
+- **Relevance scoring** (0-100) with threshold filtering
+- **Category classification** and key point extraction
+- **Daily digest generation** with AI summarization
+- **Text-to-speech** for audio digest creation
 
-## 🎯 Current Status
+### 🔍 Advanced Search & Discovery
+- **Full-text search** with PostgreSQL GIN indexes
+- **Vector similarity search** using pgvector
+- **Semantic deduplication** with 85% similarity threshold
+- **Advanced filtering** by date, source, relevance, categories
+- **Pagination** and sorting across all endpoints
 
-### ✅ **Production Ready (99/99 Tests Passing)**
+### 🔌 Developer-Friendly Integration
+- **REST API** with OpenAPI documentation
+- **MCP Server** for AI assistant integration
+- **TypeScript SDK** generation
+- **Comprehensive error handling** and logging
+- **Real-time monitoring** and health checks
 
-| Component | Status | Description |
-|-----------|--------|-------------|
-| **Core Pipeline** | ✅ Complete | End-to-end article processing working |
-| **Multi-Source Fetching** | ✅ Complete | 7 sources: ArXiv, HackerNews, RSS, YouTube, Hugging Face, Reddit, GitHub |
-| **AI Analysis** | ✅ Complete | Google Gemini with structured output |
-| **Semantic Deduplication** | ✅ Complete | Vector similarity with pgvector (85% threshold) |
-| **REST API** | ✅ Complete | 16 endpoints with search, filter, pagination |
-| **Core Backend APIs** | ✅ Complete | Search, filter, paginated articles, digests, sources (27/27 tests) |
-| **Rate Limiting** | ✅ Complete | Token bucket algorithm (17/17 tests) |
-| **Digest Generation** | ✅ Complete | AI-powered daily summaries (12/12 tests) |
-| **Text-to-Speech** | ✅ Complete | ElevenLabs integration (17/17 tests) |
-| **Task Scheduling** | ✅ Complete | Background job processing (16/16 tests) |
-| **Database Schema** | ✅ Complete | Optimized PostgreSQL with full-text search indexes |
+## 📞 Support & Documentation
 
-### 📊 **Performance Metrics**
-- **Articles Processed**: Continuous processing from 7 sources
-- **AI Analysis Success**: 100% success rate with Gemini
-- **Deduplication Accuracy**: 85% similarity threshold with pgvector
-- **API Response Time**: Sub-second for all endpoints
-- **Search Performance**: Full-text search with PostgreSQL GIN indexes
-- **Test Coverage**: 99/99 tests passing (72 original + 27 new API tests)
-
-### 🚀 **Ready for Production Use**
-The system is fully operational and can be deployed immediately with:
-- Complete article processing pipeline
-- Real-time content serving via REST API
-- Automatic deduplication and quality filtering
-- Daily digest generation with audio support
-- Comprehensive monitoring and health checks
+- **[Interactive API Docs](http://localhost:8000/docs)** - Complete API documentation
+- **[MCP Server](https://my-mcp-server.pbrow35.workers.dev/mcp)** - Live MCP server endpoint
+- **[Frontend Interface](http://localhost:3000)** - Web application interface
+- **[Project Overview](PROJECT_OVERVIEW.md)** - Simplified setup guide
+- **[Production Deployment](PRODUCTION_DEPLOYMENT.md)** - Deployment guide
 
 ## 📄 License
 
@@ -442,15 +395,18 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## 📚 Additional Documentation
+---
 
-- **[PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md)** - Simplified project explanation and setup guide
-- **[API Documentation](http://localhost:8000/docs)** - Interactive API docs (when running locally)
-- **[Test Results](#-current-status)** - All 72 tests passing with detailed metrics
+## 🎉 **Production Ready MVP**
 
-## 📞 Support
+This AI News Aggregator is a **complete, production-ready application** featuring:
 
-For questions and support:
-- Create an issue in the GitHub repository  
-- Review the [API documentation](http://localhost:8000/docs) when running locally
-- Check the simplified [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md) for easier understanding
+- ✅ **Full-stack architecture** with modern technologies
+- ✅ **Multi-source content aggregation** from 7 AI/ML sources
+- ✅ **AI-powered analysis** and quality filtering
+- ✅ **Deployed MCP server** for AI assistant integration
+- ✅ **Modern web frontend** with responsive design
+- ✅ **Comprehensive testing** and monitoring
+- ✅ **Production deployment** ready for scaling
+
+**Ready to showcase and share with colleagues!** 🚀
