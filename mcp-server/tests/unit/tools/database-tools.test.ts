@@ -18,7 +18,7 @@ vi.mock('../../../src/database/utils', () => ({
 
 // Now import the modules
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { registerDatabaseTools } from '../../../src/tools/database-tools'
+import { registerDatabaseTools } from '../../../examples/database-tools'
 import { mockProps, mockPrivilegedProps } from '../../fixtures/auth.fixtures'
 import { mockEnv } from '../../mocks/oauth.mock'
 import { mockTableColumns, mockQueryResult } from '../../fixtures/database.fixtures'
