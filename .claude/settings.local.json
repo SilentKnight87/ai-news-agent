@@ -24,7 +24,8 @@
       "Bash(git commit:*)",
       "Bash(cp:*)",
       "mcp__context7__get-library-docs",
-      "mcp__supabase__search_docs"
+      "mcp__supabase__search_docs",
+      "mcp__context7__resolve-library-id"
     ],
     "deny": []
   },
