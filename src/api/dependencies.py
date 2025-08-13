@@ -9,8 +9,10 @@ import logging
 from functools import lru_cache
 from typing import Annotated
 
+import httpx
 from fastapi import Depends
 from supabase import Client, create_client
+from supabase.lib.client_options import ClientOptions
 
 from ..agents.news_agent import get_news_analyzer as get_analyzer_instance
 from ..config import get_settings
@@ -24,19 +26,40 @@ logger = logging.getLogger(__name__)
 @lru_cache
 def get_supabase_client() -> Client:
     """
-    Get Supabase client instance.
+    Get Supabase client with connection pooling.
 
     Returns:
         Client: Supabase client for database operations.
     """
     settings = get_settings()
 
-    client = create_client(
-        settings.supabase_url,
-        settings.supabase_anon_key
+    # Configure connection pool
+    options = ClientOptions(
+        schema="public",
+        headers={"x-my-custom-header": "ai-news-aggregator"},
+        auto_refresh_token=True,
+        persist_session=True,
+        storage={},
+        flow_type="implicit",
+        realtime={
+            "params": {
+                "eventsPerSecond": 10
+            }
+        }
     )
 
-    logger.debug("Created Supabase client")
+    # Create client with custom httpx client for pooling
+    limits = httpx.Limits(max_keepalive_connections=5, max_connections=10)
+    timeout = httpx.Timeout(10.0, connect=5.0)
+    transport = httpx.HTTPTransport(limits=limits, retries=3)
+
+    client = create_client(
+        settings.supabase_url,
+        settings.supabase_anon_key,
+        options=options
+    )
+
+    logger.debug("Created Supabase client with connection pooling")
     return client
 
 
@@ -87,4 +110,5 @@ def get_embeddings_service():
     Returns:
         EmbeddingsService: Embeddings service.
     """
-    return get_embeddings_service()
+    from src.services.embeddings import EmbeddingsService
+    return EmbeddingsService()

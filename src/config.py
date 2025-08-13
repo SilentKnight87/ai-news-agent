@@ -54,6 +54,12 @@ class Settings(BaseSettings):
     embedding_model: str = Field("sentence-transformers/all-MiniLM-L6-v2", description="HuggingFace embedding model")
     embedding_batch_size: int = Field(100, description="Batch size for embedding generation")
 
+    # CORS configuration
+    cors_allowed_origins: str = Field(
+        "http://localhost:3000",
+        description="Comma-separated list of allowed CORS origins"
+    )
+
     # Development settings
     debug: bool = Field(False, description="Enable debug mode")
     log_level: str = Field("INFO", description="Logging level")

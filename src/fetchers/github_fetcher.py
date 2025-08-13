@@ -8,7 +8,6 @@ for recent releases from important AI/ML repositories.
 import asyncio
 import json
 import logging
-import os
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -53,11 +52,11 @@ class GitHubFetcher(BaseFetcher):
         # Load repositories from config file
         self.repositories = self._load_repositories()
         logger.info(f"GitHub fetcher initialized tracking {len(self.repositories)} repositories")
-    
+
     def _load_repositories(self) -> list[str]:
         """Load GitHub repositories from config file."""
         config_path = Path(__file__).parent.parent.parent / "config" / "github_repos.json"
-        
+
         try:
             with open(config_path) as f:
                 repos = json.load(f)

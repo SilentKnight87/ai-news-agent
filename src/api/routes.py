@@ -7,8 +7,8 @@ including article management, fetching, and digest operations.
 
 import logging
 import time
-from datetime import datetime, timedelta, date
-from typing import Annotated, Optional
+from datetime import date, datetime, timedelta
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
@@ -18,20 +18,20 @@ from ..fetchers.factory import fetcher_factory
 from ..models.articles import Article, ArticleSource
 from ..models.schemas import (
     ArticleListResponse,
+    ArticleSummary,
+    DigestDetailResponse,
+    DigestListResponse,
     DigestResponse,
+    DigestSummaryItem,
     FetchTriggerRequest,
     FetchTriggerResponse,
-    HealthResponse,
-    SearchResponse,
     FilterResponse,
+    HealthResponse,
     PaginatedArticleResponse,
-    DigestListResponse,
-    DigestDetailResponse,
-    SourcesMetadataResponse,
     PaginationMeta,
-    DigestSummaryItem,
-    ArticleSummary,
+    SearchResponse,
     SourceMetadata,
+    SourcesMetadataResponse,
 )
 from ..repositories.articles import ArticleRepository
 from ..services.deduplication import DeduplicationService
@@ -90,7 +90,7 @@ async def health_check(
 @router.get("/articles/search", response_model=SearchResponse)
 async def search_articles(
     q: str = Query(..., description="Search query", min_length=1),
-    source: Optional[ArticleSource] = Query(None, description="Filter by source"),
+    source: ArticleSource | None = Query(None, description="Filter by source"),
     limit: int = Query(20, ge=1, le=100, description="Results per page"),
     offset: int = Query(0, ge=0, description="Pagination offset"),
     article_repo: ArticleRepository = Depends(get_article_repository)
@@ -113,7 +113,7 @@ async def search_articles(
     """
     try:
         start_time = time.time()
-        
+
         # Perform search
         articles, total = await article_repo.search_articles(
             query=q,
@@ -121,16 +121,16 @@ async def search_articles(
             limit=limit,
             offset=offset
         )
-        
+
         took_ms = int((time.time() - start_time) * 1000)
-        
+
         return SearchResponse(
             articles=articles,
             total=total,
             query=q,
             took_ms=took_ms
         )
-        
+
     except Exception as e:
         logger.error(f"Search failed for query '{q}': {e}")
         raise HTTPException(
@@ -141,12 +141,12 @@ async def search_articles(
 
 @router.get("/articles/filter", response_model=FilterResponse)
 async def filter_articles(
-    start_date: Optional[date] = Query(None, description="Filter articles after this date"),
-    end_date: Optional[date] = Query(None, description="Filter articles before this date"),
-    relevance_min: Optional[int] = Query(None, ge=0, le=100, description="Minimum relevance score"),
-    relevance_max: Optional[int] = Query(None, ge=0, le=100, description="Maximum relevance score"),
-    sources: Optional[str] = Query(None, description="Comma-separated source list"),
-    categories: Optional[str] = Query(None, description="Comma-separated category list"),
+    start_date: date | None = Query(None, description="Filter articles after this date"),
+    end_date: date | None = Query(None, description="Filter articles before this date"),
+    relevance_min: int | None = Query(None, ge=0, le=100, description="Minimum relevance score"),
+    relevance_max: int | None = Query(None, ge=0, le=100, description="Maximum relevance score"),
+    sources: str | None = Query(None, description="Comma-separated source list"),
+    categories: str | None = Query(None, description="Comma-separated category list"),
     limit: int = Query(20, ge=1, le=100, description="Results per page"),
     offset: int = Query(0, ge=0, description="Pagination offset"),
     article_repo: ArticleRepository = Depends(get_article_repository)
@@ -173,20 +173,20 @@ async def filter_articles(
     """
     try:
         start_time = time.time()
-        
+
         # Parse comma-separated lists
         source_list = None
         if sources:
             source_list = [ArticleSource(s.strip()) for s in sources.split(",")]
-            
+
         category_list = None
         if categories:
             category_list = [c.strip() for c in categories.split(",")]
-        
+
         # Convert dates to datetime if provided
         start_datetime = datetime.combine(start_date, datetime.min.time()) if start_date else None
         end_datetime = datetime.combine(end_date, datetime.max.time()) if end_date else None
-        
+
         # Apply filters
         articles, total = await article_repo.filter_articles(
             start_date=start_datetime,
@@ -198,7 +198,7 @@ async def filter_articles(
             limit=limit,
             offset=offset
         )
-        
+
         # Build filters_applied dict
         filters_applied = {}
         if start_date:
@@ -213,16 +213,16 @@ async def filter_articles(
             filters_applied["sources"] = source_list
         if categories:
             filters_applied["categories"] = category_list
-            
+
         took_ms = int((time.time() - start_time) * 1000)
-        
+
         return FilterResponse(
             articles=articles,
             filters_applied=filters_applied,
             total=total,
             took_ms=took_ms
         )
-        
+
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
     except Exception as e:
@@ -239,7 +239,7 @@ async def get_articles_paginated(
     per_page: int = Query(20, ge=1, le=100, description="Items per page"),
     sort_by: str = Query("published_at", description="Field to sort by"),
     order: str = Query("desc", pattern="^(asc|desc)$", description="Sort order"),
-    source: Optional[ArticleSource] = Query(None, description="Filter by source"),
+    source: ArticleSource | None = Query(None, description="Filter by source"),
     article_repo: ArticleRepository = Depends(get_article_repository)
 ) -> PaginatedArticleResponse:
     """
@@ -267,7 +267,7 @@ async def get_articles_paginated(
                 status_code=422,
                 detail=f"Invalid sort_by field. Must be one of: {', '.join(valid_sort_fields)}"
             )
-        
+
         # Get paginated results
         articles, total = await article_repo.get_articles_paginated(
             page=page,
@@ -276,12 +276,12 @@ async def get_articles_paginated(
             order=order,
             source=source
         )
-        
+
         # Calculate pagination metadata
         total_pages = (total + per_page - 1) // per_page if total > 0 else 0
         has_next = page < total_pages
         has_prev = page > 1
-        
+
         pagination = PaginationMeta(
             page=page,
             per_page=per_page,
@@ -290,19 +290,19 @@ async def get_articles_paginated(
             has_next=has_next,
             has_prev=has_prev
         )
-        
+
         meta = {
             "sort_by": sort_by,
             "order": order,
             "cache_hit": False
         }
-        
+
         return PaginatedArticleResponse(
             articles=articles,
             pagination=pagination,
             meta=meta
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -663,7 +663,7 @@ async def get_scheduler_status():
         Dict: Scheduler status with task details.
     """
     from ..services.scheduler import get_scheduler
-    
+
     scheduler = get_scheduler()
     return scheduler.get_status()
 
@@ -680,13 +680,13 @@ async def run_scheduler_task(task_name: str):
         Dict: Task execution result.
     """
     from ..services.scheduler import get_scheduler
-    
+
     scheduler = get_scheduler()
     success = await scheduler.run_task_now(task_name)
-    
+
     if not success:
         raise HTTPException(status_code=404, detail=f"Task '{task_name}' not found or execution failed")
-    
+
     return {
         "message": f"Task '{task_name}' executed successfully",
         "timestamp": datetime.utcnow().isoformat()
@@ -706,24 +706,24 @@ async def get_performance_metrics(
     try:
         # Get article statistics
         stats = await article_repo.get_article_stats()
-        
-        # Get scheduler status  
+
+        # Get scheduler status
         from ..services.scheduler import get_scheduler
         scheduler = get_scheduler()
         scheduler_status = scheduler.get_status()
-        
+
         # Get fetcher health status
         fetcher_health = fetcher_factory.get_health_status()
-        
+
         # Calculate performance metrics
         total_articles = stats.get("total_articles", 0)
         recent_24h = stats.get("recent_24h", 0)
         duplicates = stats.get("duplicates", 0)
-        
+
         # Calculate rates
         duplicate_rate = (duplicates / total_articles * 100) if total_articles > 0 else 0
         daily_collection_rate = recent_24h  # Articles per day
-        
+
         return {
             "timestamp": datetime.utcnow().isoformat(),
             "database": {
@@ -762,7 +762,7 @@ async def get_performance_metrics(
                 "data_freshness_hours": 24 if recent_24h > 0 else None
             }
         }
-        
+
     except Exception as e:
         logger.error(f"Failed to get performance metrics: {e}")
         raise HTTPException(status_code=500, detail="Failed to retrieve performance metrics")
@@ -799,7 +799,7 @@ async def get_digests(
             page=page,
             per_page=per_page
         )
-        
+
         # Convert to response models
         digests = []
         for digest_data in digest_dicts:
@@ -815,10 +815,10 @@ async def get_digests(
                 created_at=datetime.fromisoformat(digest_data["created_at"].replace("Z", "+00:00"))
             )
             digests.append(digest_item)
-        
+
         # Calculate pagination
         total_pages = (total + per_page - 1) // per_page if total > 0 else 0
-        
+
         pagination = PaginationMeta(
             page=page,
             per_page=per_page,
@@ -827,12 +827,12 @@ async def get_digests(
             has_next=page < total_pages,
             has_prev=page > 1
         )
-        
+
         return DigestListResponse(
             digests=digests,
             pagination=pagination
         )
-        
+
     except Exception as e:
         logger.error(f"Get digests failed: {e}")
         raise HTTPException(
@@ -865,10 +865,10 @@ async def get_digest_by_id(
     try:
         # Get digest from repository
         digest_data = await article_repo.get_digest_by_id(digest_id)
-        
+
         if not digest_data:
             raise HTTPException(status_code=404, detail="Digest not found")
-        
+
         # Convert articles to ArticleSummary
         articles = []
         for article_data in digest_data.get("articles", []):
@@ -881,7 +881,7 @@ async def get_digest_by_id(
                 relevance_score=article_data.get("relevance_score")
             )
             articles.append(article_summary)
-        
+
         return DigestDetailResponse(
             id=digest_data["id"],
             date=digest_data["date"],
@@ -894,7 +894,7 @@ async def get_digest_by_id(
             created_at=datetime.fromisoformat(digest_data["created_at"].replace("Z", "+00:00")),
             updated_at=datetime.fromisoformat(digest_data["updated_at"].replace("Z", "+00:00"))
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -924,15 +924,15 @@ async def get_sources_metadata(
     try:
         # Get sources metadata from repository
         sources_data = await article_repo.get_sources_metadata()
-        
+
         # Get overall stats
         stats = await article_repo.get_article_stats()
         total_articles = stats.get("total_articles", 0)
-        
+
         # Get fetcher health for last fetch times
         fetcher_health = fetcher_factory.get_health_status()
         fetcher_status = fetcher_health.get("fetcher_status", {})
-        
+
         # Convert to response models
         sources = []
         for source_data in sources_data:
@@ -940,15 +940,15 @@ async def get_sources_metadata(
             source_name = source_data["name"]
             fetcher_info = fetcher_status.get(source_name, {})
             last_fetch = fetcher_info.get("last_request_time")
-            
+
             if last_fetch:
                 last_fetch = datetime.fromisoformat(last_fetch.replace("Z", "+00:00"))
-            
+
             # Parse last published if it's a string
             last_published = source_data.get("last_published")
             if last_published and isinstance(last_published, str):
                 last_published = datetime.fromisoformat(last_published.replace("Z", "+00:00"))
-            
+
             source_meta = SourceMetadata(
                 name=source_data["name"],
                 display_name=source_data["display_name"],
@@ -962,17 +962,17 @@ async def get_sources_metadata(
                 categories=[]
             )
             sources.append(source_meta)
-        
+
         # Count active sources
         active_sources = sum(1 for s in sources if s.status == "active")
-        
+
         return SourcesMetadataResponse(
             sources=sources,
             total_sources=len(sources),
             active_sources=active_sources,
             total_articles=total_articles
         )
-        
+
     except Exception as e:
         logger.error(f"Get sources metadata failed: {e}")
         raise HTTPException(

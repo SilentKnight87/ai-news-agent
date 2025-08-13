@@ -456,7 +456,7 @@ async def setup_default_tasks() -> None:
 
             # Save digest to database (this would be done in the repository)
             # For now, let's assume digest has an ID after saving
-            
+
             # Queue audio generation if TTS is configured
             if settings.elevenlabs_api_key and hasattr(digest, 'id'):
                 try:
@@ -481,28 +481,28 @@ async def setup_default_tasks() -> None:
         func=generate_daily_digest,
         daily_at_hour=settings.digest_hour_utc
     )
-    
+
     # Task 3: Process audio queue (every minute)
     from ..tasks.audio_tasks import process_audio_queue
-    
+
     scheduler.add_task(
         name="process_audio_queue",
         func=process_audio_queue,
         interval_minutes=1
     )
-    
+
     # Task 4: Clean up old audio files (daily)
     from ..tasks.audio_tasks import cleanup_old_audio
-    
+
     scheduler.add_task(
         name="cleanup_audio",
         func=cleanup_old_audio,
         daily_at_hour=3  # Run at 3 AM UTC
     )
-    
+
     # Task 5: Retry failed audio tasks (hourly)
     from ..tasks.audio_tasks import retry_failed_audio
-    
+
     scheduler.add_task(
         name="retry_failed_audio",
         func=retry_failed_audio,

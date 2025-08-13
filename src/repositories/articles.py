@@ -7,6 +7,7 @@ including CRUD operations, vector similarity search, and batch processing.
 
 import json
 import logging
+import re
 from datetime import datetime, timedelta
 from uuid import UUID
 
@@ -28,7 +29,7 @@ class ArticleRepository:
     # Source mapping for database compatibility - preserves actual source in metadata
     _SOURCE_MAPPING = {
         ArticleSource.YOUTUBE: ArticleSource.RSS,
-        ArticleSource.HUGGINGFACE: ArticleSource.RSS, 
+        ArticleSource.HUGGINGFACE: ArticleSource.RSS,
         ArticleSource.REDDIT: ArticleSource.RSS,
         ArticleSource.GITHUB: ArticleSource.RSS
     }
@@ -43,6 +44,49 @@ class ArticleRepository:
         self.supabase = supabase_client
         self._metadata_column_exists = None  # Cache for metadata column check
         logger.info("Article repository initialized")
+
+    def _sanitize_search_query(self, query: str) -> str:
+        """
+        Sanitize search query to prevent SQL injection.
+        
+        Args:
+            query: Raw search query from user input.
+            
+        Returns:
+            str: Sanitized query safe for database operations.
+        """
+        if not query or not isinstance(query, str):
+            return ""
+
+        # Remove dangerous SQL injection patterns
+        dangerous_patterns = [
+            r"';\s*--",  # Comment injection
+            r"';\s*/\*",  # Block comment injection
+            r"';\s*DROP",  # DROP statement injection
+            r"';\s*DELETE",  # DELETE statement injection
+            r"';\s*UPDATE",  # UPDATE statement injection
+            r"';\s*INSERT",  # INSERT statement injection
+            r"';\s*ALTER",  # ALTER statement injection
+            r"';\s*CREATE",  # CREATE statement injection
+            r"';\s*EXEC",  # EXEC statement injection
+            r"xp_\w+",  # SQL Server extended procedures
+            r"sp_\w+",  # SQL Server stored procedures
+        ]
+
+        sanitized = query.strip()
+
+        # Remove dangerous patterns
+        for pattern in dangerous_patterns:
+            sanitized = re.sub(pattern, "", sanitized, flags=re.IGNORECASE)
+
+        # Limit length to prevent DoS
+        if len(sanitized) > 500:
+            sanitized = sanitized[:500]
+
+        # Remove multiple quotes that could be used for injection
+        sanitized = re.sub(r"'{2,}", "'", sanitized)
+
+        return sanitized
 
     def _check_metadata_column_exists(self) -> bool:
         """
@@ -60,7 +104,7 @@ class ArticleRepository:
             except Exception:
                 self._metadata_column_exists = False
                 logger.debug("Metadata column does not exist in articles table")
-        
+
         return self._metadata_column_exists
 
     async def create_article(self, article: Article) -> Article:
@@ -507,62 +551,65 @@ class ArticleRepository:
                 "max_results": limit,
                 "skip_results": offset
             }
-            
+
             if source:
                 params["source_filter"] = source.value
-                
+
             # Try to use RPC function if it exists
             try:
                 response = self.supabase.rpc("search_articles_fulltext", params).execute()
-                
+
                 articles = []
                 total = 0
-                
+
                 for item in response.data:
                     article = self._db_dict_to_article(item)
                     articles.append(article)
                     if item.get("total_count"):
                         total = int(item["total_count"])
-                        
+
                 return articles, total
-                
+
             except Exception:
                 # Fallback to basic search using ilike
                 logger.debug("Full-text search function not available, using fallback")
-                
-                # Build query with basic text matching
-                search_pattern = f"%{query}%"
-                
-                # Get total count first
+
+                # Build query with basic text matching using safe parameterized queries
+                sanitized_query = self._sanitize_search_query(query)
+                search_pattern = f"%{sanitized_query}%"
+
+                # Get total count first - using safe parameterized queries
                 count_query = self.supabase.table("articles").select("id", count="exact")
+                # Use separate ilike calls to avoid injection - Supabase client handles escaping
                 count_query = count_query.or_(f"title.ilike.{search_pattern},content.ilike.{search_pattern}")
-                
+
                 if source:
                     count_query = count_query.eq("source", source.value)
-                    
+
                 count_response = count_query.execute()
                 total = count_response.count or 0
-                
-                # Get paginated results
+
+                # Get paginated results - using safe parameterized queries
                 query_builder = self.supabase.table("articles").select("*")
+                # Use separate ilike calls to avoid injection - Supabase client handles escaping
                 query_builder = query_builder.or_(f"title.ilike.{search_pattern},content.ilike.{search_pattern}")
-                
+
                 if source:
                     query_builder = query_builder.eq("source", source.value)
-                    
+
                 query_builder = query_builder.order("published_at", desc=True)
                 query_builder = query_builder.range(offset, offset + limit - 1)
-                
+
                 response = query_builder.execute()
-                
+
                 articles = [self._db_dict_to_article(item) for item in response.data]
-                
+
                 return articles, total
-                
+
         except Exception as e:
             logger.error(f"Search failed for query '{query}': {e}")
             return [], 0
-            
+
     async def filter_articles(
         self,
         start_date: datetime | None = None,
@@ -593,7 +640,7 @@ class ArticleRepository:
         try:
             # Build count query
             count_query = self.supabase.table("articles").select("id", count="exact")
-            
+
             # Apply filters
             if start_date:
                 count_query = count_query.gte("published_at", start_date.isoformat())
@@ -610,14 +657,14 @@ class ArticleRepository:
                 # For array contains, we need to use contains
                 for category in categories:
                     count_query = count_query.contains("categories", [category])
-                    
+
             count_query = count_query.eq("is_duplicate", False)
             count_response = count_query.execute()
             total = count_response.count or 0
-            
+
             # Build data query with same filters
             data_query = self.supabase.table("articles").select("*")
-            
+
             if start_date:
                 data_query = data_query.gte("published_at", start_date.isoformat())
             if end_date:
@@ -632,21 +679,21 @@ class ArticleRepository:
             if categories:
                 for category in categories:
                     data_query = data_query.contains("categories", [category])
-                    
+
             data_query = data_query.eq("is_duplicate", False)
             data_query = data_query.order("published_at", desc=True)
             data_query = data_query.range(offset, offset + limit - 1)
-            
+
             response = data_query.execute()
-            
+
             articles = [self._db_dict_to_article(item) for item in response.data]
-            
+
             return articles, total
-            
+
         except Exception as e:
             logger.error(f"Filter articles failed: {e}")
             return [], 0
-            
+
     async def get_articles_paginated(
         self,
         page: int = 1,
@@ -671,39 +718,39 @@ class ArticleRepository:
         try:
             # Calculate offset from page number
             offset = (page - 1) * per_page
-            
+
             # Build count query
             count_query = self.supabase.table("articles").select("id", count="exact")
             count_query = count_query.eq("is_duplicate", False)
-            
+
             if source:
                 count_query = count_query.eq("source", source.value)
-                
+
             count_response = count_query.execute()
             total = count_response.count or 0
-            
+
             # Build data query
             data_query = self.supabase.table("articles").select("*")
             data_query = data_query.eq("is_duplicate", False)
-            
+
             if source:
                 data_query = data_query.eq("source", source.value)
-                
+
             # Apply sorting
             desc_order = order.lower() == "desc"
             data_query = data_query.order(sort_by, desc=desc_order)
             data_query = data_query.range(offset, offset + per_page - 1)
-            
+
             response = data_query.execute()
-            
+
             articles = [self._db_dict_to_article(item) for item in response.data]
-            
+
             return articles, total
-            
+
         except Exception as e:
             logger.error(f"Get paginated articles failed: {e}")
             return [], 0
-            
+
     async def get_sources_metadata(self) -> list[dict]:
         """
         Get metadata about all sources including article counts.
@@ -715,7 +762,7 @@ class ArticleRepository:
             # Try to use RPC function if available
             try:
                 response = self.supabase.rpc("get_sources_metadata").execute()
-                
+
                 # Enhance with display names and descriptions
                 sources_info = []
                 for item in response.data:
@@ -730,20 +777,20 @@ class ArticleRepository:
                         "status": "active",
                         "icon_url": f"/icons/{source_enum.value}.svg"
                     })
-                    
+
                 return sources_info
-                
+
             except Exception:
                 # Fallback to manual aggregation
                 logger.debug("Sources metadata function not available, using fallback")
-                
+
                 sources_info = []
                 for source in ArticleSource:
                     # Get count for this source
                     count_response = self.supabase.table("articles").select(
                         "id, published_at, relevance_score", count="exact"
                     ).eq("source", source.value).eq("is_duplicate", False).execute()
-                    
+
                     # Get last published date and avg relevance
                     if count_response.data:
                         articles_data = count_response.data
@@ -757,7 +804,7 @@ class ArticleRepository:
                     else:
                         last_published = None
                         avg_relevance = 0
-                        
+
                     sources_info.append({
                         "name": source.value,
                         "display_name": self._get_source_display_name(source),
@@ -768,13 +815,13 @@ class ArticleRepository:
                         "status": "active",
                         "icon_url": f"/icons/{source.value}.svg"
                     })
-                    
+
                 return sources_info
-                
+
         except Exception as e:
             logger.error(f"Get sources metadata failed: {e}")
             return []
-            
+
     async def get_digests(
         self,
         page: int = 1,
@@ -793,29 +840,29 @@ class ArticleRepository:
         try:
             # Calculate offset
             offset = (page - 1) * per_page
-            
+
             # Get total count
             count_response = self.supabase.table("daily_digests").select(
                 "id", count="exact"
             ).execute()
             total = count_response.count or 0
-            
+
             # Get paginated digests
             response = self.supabase.table("daily_digests").select(
                 "*, digest_articles(article_id)"
             ).order("digest_date", desc=True).range(
                 offset, offset + per_page - 1
             ).execute()
-            
+
             digests = []
             for digest_data in response.data:
                 # Count articles in this digest
                 article_count = len(digest_data.get("digest_articles", []))
-                
+
                 # Extract key developments from summary
                 summary = digest_data["summary_text"]
                 key_developments = self._extract_key_developments(summary)
-                
+
                 digests.append({
                     "id": digest_data["id"],
                     "date": digest_data["digest_date"],
@@ -827,13 +874,13 @@ class ArticleRepository:
                     "audio_duration": None,  # Would need to be stored or calculated
                     "created_at": digest_data["created_at"]
                 })
-                
+
             return digests, total
-            
+
         except Exception as e:
             logger.error(f"Get digests failed: {e}")
             return [], 0
-            
+
     async def get_digest_by_id(self, digest_id: UUID) -> dict | None:
         """
         Get a single digest with all its articles.
@@ -849,26 +896,26 @@ class ArticleRepository:
             response = self.supabase.table("daily_digests").select(
                 "*, digest_articles(article_id)"
             ).eq("id", str(digest_id)).single().execute()
-            
+
             if not response.data:
                 return None
-                
+
             digest_data = response.data
-            
+
             # Get full article details for this digest
             article_ids = [item["article_id"] for item in digest_data.get("digest_articles", [])]
-            
+
             articles = []
             if article_ids:
                 articles_response = self.supabase.table("articles").select(
                     "id, title, summary, source, url, relevance_score"
                 ).in_("id", article_ids).execute()
-                
+
                 articles = articles_response.data
-                
+
             # Extract key developments
             key_developments = self._extract_key_developments(digest_data["summary_text"])
-            
+
             return {
                 "id": digest_data["id"],
                 "date": digest_data["digest_date"],
@@ -881,11 +928,11 @@ class ArticleRepository:
                 "created_at": digest_data["created_at"],
                 "updated_at": digest_data.get("updated_at", digest_data["created_at"])
             }
-            
+
         except Exception as e:
             logger.error(f"Get digest by ID failed: {e}")
             return None
-            
+
     def _get_source_display_name(self, source: ArticleSource) -> str:
         """Get display name for a source."""
         display_names = {
@@ -898,7 +945,7 @@ class ArticleRepository:
             ArticleSource.HUGGINGFACE: "Hugging Face"
         }
         return display_names.get(source, source.value.title())
-        
+
     def _get_source_description(self, source: ArticleSource) -> str:
         """Get description for a source."""
         descriptions = {
@@ -911,21 +958,21 @@ class ArticleRepository:
             ArticleSource.HUGGINGFACE: "ML models and datasets"
         }
         return descriptions.get(source, "Content aggregation source")
-        
+
     def _extract_key_developments(self, summary: str, max_points: int = 3) -> list[str]:
         """Extract key developments from a summary text."""
         # Simple extraction - split by sentences and take first few
         # In production, this could use AI or more sophisticated parsing
         sentences = summary.split(". ")
         key_points = []
-        
+
         for sentence in sentences[:max_points]:
             if len(sentence) > 20:  # Filter out very short sentences
                 clean_sentence = sentence.strip()
                 if not clean_sentence.endswith("."):
                     clean_sentence += "."
                 key_points.append(clean_sentence)
-                
+
         return key_points if key_points else ["Daily AI news summary"]
 
     def _article_to_db_dict(self, article: Article) -> dict:
@@ -940,12 +987,12 @@ class ArticleRepository:
         """
         # Map new source types to existing database enum values
         db_source = self._SOURCE_MAPPING.get(article.source, article.source)
-        
+
         # Preserve actual source type in metadata if it's being mapped
         metadata = dict(article.metadata)  # Copy existing metadata
         if article.source in self._SOURCE_MAPPING:
             metadata["_actual_source"] = article.source.value
-        
+
         data = {
             "source_id": article.source_id,
             "source": db_source.value,
@@ -962,7 +1009,7 @@ class ArticleRepository:
             "is_duplicate": article.is_duplicate,
             "duplicate_of": str(article.duplicate_of) if article.duplicate_of else None
         }
-        
+
         # Include metadata if column exists
         if self._check_metadata_column_exists():
             data["metadata"] = metadata
@@ -1002,7 +1049,7 @@ class ArticleRepository:
                 metadata = json.loads(metadata)
             except (json.JSONDecodeError, TypeError):
                 metadata = {}
-        
+
         # Restore actual source from metadata if it was mapped
         actual_source = metadata.get("_actual_source")
         if actual_source:

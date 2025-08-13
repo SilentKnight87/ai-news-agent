@@ -44,11 +44,11 @@ class ArxivFetcher(BaseFetcher):
         self.categories, self.max_results = self._load_config()
 
         logger.info(f"ArXiv fetcher initialized with {self.rate_limit_delay}s delay, tracking {len(self.categories)} categories")
-    
+
     def _load_config(self) -> tuple[list[str], int]:
         """Load categories and settings from config file."""
         config_path = Path(__file__).parent.parent.parent / "config" / "arxiv_categories.json"
-        
+
         try:
             with open(config_path) as f:
                 config = json.load(f)
@@ -80,7 +80,7 @@ class ArxivFetcher(BaseFetcher):
             # Use configured max_results if not specified
             if max_articles is None:
                 max_articles = self.max_results
-            
+
             logger.info(f"Fetching up to {max_articles} papers from ArXiv")
 
             # Build query for AI/ML categories

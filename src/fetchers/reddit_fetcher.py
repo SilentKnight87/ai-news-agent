@@ -71,11 +71,11 @@ class RedditFetcher(BaseFetcher):
         self.min_comments = 10
 
         logger.info(f"Reddit fetcher initialized for {len(self.subreddits)} subreddits")
-    
+
     def _load_subreddits(self) -> list[str]:
         """Load subreddits from config file."""
         config_path = Path(__file__).parent.parent.parent / "config" / "reddit_subs.json"
-        
+
         try:
             with open(config_path) as f:
                 subs = json.load(f)
@@ -104,15 +104,15 @@ class RedditFetcher(BaseFetcher):
         try:
             logger.info(f"Fetching posts from {len(self.subreddits)} subreddits")
             all_articles = []
-            
+
             # Fetch from each subreddit
             articles_per_sub = max(max_articles // len(self.subreddits), 10)
-            
+
             for subreddit_name in self.subreddits:
                 try:
                     logger.debug(f"Fetching from r/{subreddit_name}")
                     subreddit = await self.reddit.subreddit(subreddit_name)
-                    
+
                     # Fetch from multiple streams concurrently
                     hot_task = self._fetch_from_stream(subreddit.hot(limit=50), "hot")
                     top_day_task = self._fetch_from_stream(subreddit.top(time_filter="day", limit=25), "top_day")
@@ -150,7 +150,7 @@ class RedditFetcher(BaseFetcher):
                             except Exception as e:
                                 logger.warning(f"Failed to convert post {post.id}: {e}")
                                 continue
-                                
+
                 except Exception as e:
                     logger.warning(f"Failed to fetch from r/{subreddit_name}: {e}")
                     continue
