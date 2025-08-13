@@ -81,7 +81,7 @@ export interface McpResponse {
 }
 
 // Standard response creators
-export function createSuccessResponse(message: string, data?: any): McpResponse {
+export function createSuccessResponse(message: string, data?: any) {
   let text = `**Success**\n\n${message}`;
   if (data !== undefined) {
     text += `\n\n**Result:**\n\`\`\`json\n${JSON.stringify(data, null, 2)}\n\`\`\``;
@@ -94,7 +94,7 @@ export function createSuccessResponse(message: string, data?: any): McpResponse 
   };
 }
 
-export function createErrorResponse(message: string, details?: any): McpResponse {
+export function createErrorResponse(message: string, details?: any) {
   let text = `**Error**\n\n${message}`;
   if (details !== undefined) {
     text += `\n\n**Details:**\n\`\`\`json\n${JSON.stringify(details, null, 2)}\n\`\`\``;
