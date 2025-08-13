@@ -77,22 +77,34 @@ class RateLimiter:
 
             return False
 
-    async def wait_for_tokens(self, tokens: int = 1) -> None:
+    async def wait_if_needed(self, tokens: int = 1, timeout: float = 30.0) -> bool:
         """
-        Wait until tokens are available and acquire them.
+        Wait if rate limited, with configurable timeout.
+        Returns False if timeout exceeded.
         
         Args:
             tokens: Number of tokens to acquire.
+            timeout: Maximum time to wait in seconds.
+            
+        Returns:
+            bool: True if tokens acquired, False if timeout exceeded.
         """
+        start_time = asyncio.get_event_loop().time()
+
         while not await self.acquire(tokens):
-            # Calculate wait time based on token deficit
+            if asyncio.get_event_loop().time() - start_time > timeout:
+                logger.warning(f"Rate limiter timeout after {timeout}s")
+                return False
+
             async with self.lock:
                 deficit = tokens - self.tokens
                 wait_time = deficit / self.config.requests_per_second
-                wait_time = min(wait_time, self.config.cooldown_seconds)
+                wait_time = min(wait_time, self.config.cooldown_seconds, 1.0)
 
             logger.debug(f"Rate limited, waiting {wait_time:.2f}s")
             await asyncio.sleep(wait_time)
+
+        return True
 
     def get_status(self) -> dict[str, float]:
         """

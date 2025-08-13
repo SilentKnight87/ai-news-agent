@@ -87,7 +87,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Shutdown
     logger.info("Shutting down AI News Aggregator API")
-    
+
     # Stop the task scheduler
     try:
         from .services.scheduler import stop_scheduler
@@ -116,18 +116,21 @@ def create_app() -> FastAPI:
         lifespan=lifespan
     )
 
-    # Add CORS middleware
+    # Add CORS middleware with secure configuration
+    ALLOWED_ORIGINS = settings.cors_allowed_origins.split(",") if settings.cors_allowed_origins else []
+
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],  # Configure appropriately for production
+        allow_origins=ALLOWED_ORIGINS or ["http://localhost:3000"],  # Fallback for dev
         allow_credentials=True,
-        allow_methods=["*"],
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         allow_headers=["*"],
+        max_age=3600,
     )
 
     # Include API routes
     app.include_router(router, prefix="/api/v1")
-    
+
     # Include audio routes
     from .api.audio import router as audio_router
     app.include_router(audio_router, prefix="/api/v1")

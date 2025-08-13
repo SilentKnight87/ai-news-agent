@@ -6,7 +6,8 @@ and regeneration of digest audio.
 """
 
 import logging
-from typing import Annotated, AsyncGenerator
+from collections.abc import AsyncGenerator
+from typing import Annotated
 
 import httpx
 from fastapi import APIRouter, Depends, Header, HTTPException, Request
@@ -64,17 +65,17 @@ async def stream_digest_audio(
     # Get digest
     result = supabase.table("daily_digests").select("*").eq("id", digest_id).single().execute()
     digest = result.data
-    
+
     if not digest or not digest.get("audio_url"):
         raise HTTPException(404, "Audio not found")
-    
+
     # Prepare headers
     headers = {
         "Accept-Ranges": "bytes",
         "Content-Type": "audio/mpeg",
         "Cache-Control": "public, max-age=3600"
     }
-    
+
     # Handle range requests for seeking
     audio_size = digest.get("audio_size", 0)
     if range and audio_size > 0:
@@ -90,10 +91,10 @@ async def stream_digest_audio(
     else:
         headers["Content-Length"] = str(audio_size) if audio_size else None
         status_code = 200
-    
+
     # Remove None values from headers
     headers = {k: v for k, v in headers.items() if v is not None}
-    
+
     return StreamingResponse(
         stream_audio_content(digest["audio_url"]),
         status_code=status_code,
@@ -123,10 +124,10 @@ async def get_audio_info(
     # Get digest
     result = supabase.table("daily_digests").select("*").eq("id", digest_id).single().execute()
     digest = result.data
-    
+
     if not digest or not digest.get("audio_url"):
         raise HTTPException(404, "Audio not found")
-    
+
     return AudioInfoResponse(
         audio_url=digest["audio_url"],
         duration_seconds=digest.get("audio_duration", 0),
@@ -152,14 +153,14 @@ async def regenerate_audio(
         dict: Success message.
     """
     audio_queue = get_audio_queue()
-    
+
     success = await audio_queue.queue_audio_generation(
         digest_id=digest_id,
         text=None,  # Will fetch from digest
         voice_type=voice_type,
         force=True
     )
-    
+
     if success:
         return {"message": "Audio regeneration queued", "digest_id": digest_id}
     else:

@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react"
 import { X, ExternalLink, Share2, TrendingUp, Clock, User } from "lucide-react"
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion"
+import DOMPurify from 'isomorphic-dompurify'
 import { Article } from "@/types"
 import { cn, formatTimeAgo, getRelevanceColor, getSourceIcon } from "@/lib/utils"
 
@@ -188,33 +189,35 @@ export default function ArticleModal({ article, isOpen, onClose }: ArticleModalP
                         </p>
                       </div>
 
-                      {/* Key Points */}
-                      <div>
-                        <h3 className="text-lg font-semibold text-white mb-3">Key Points</h3>
-                        <ul className="space-y-2">
-                          <li className="flex items-start">
-                            <span className="text-green-400 mr-2 mt-1">•</span>
-                            <span className="text-gray-300">Revolutionary AI model achieves 95% accuracy in complex reasoning tasks</span>
-                          </li>
-                          <li className="flex items-start">
-                            <span className="text-green-400 mr-2 mt-1">•</span>
-                            <span className="text-gray-300">New architecture reduces computational requirements by 40%</span>
-                          </li>
-                          <li className="flex items-start">
-                            <span className="text-green-400 mr-2 mt-1">•</span>
-                            <span className="text-gray-300">Open-source implementation available on GitHub</span>
-                          </li>
-                        </ul>
-                      </div>
+                      {/* Key Points - Use actual data */}
+                      {article.key_points && article.key_points.length > 0 ? (
+                        <div>
+                          <h3 className="text-lg font-semibold text-white mb-3">Key Points</h3>
+                          <ul className="space-y-2">
+                            {article.key_points.map((point, index) => (
+                              <li key={index} className="flex items-start">
+                                <span className="text-green-400 mr-2 mt-1">•</span>
+                                <span className="text-gray-300">{point}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ) : null}
 
                       {/* Full Content */}
                       {article.content && (
                         <div>
                           <h3 className="text-lg font-semibold text-white mb-3">Full Article</h3>
                           <div className="prose prose-invert max-w-none">
-                            <p className="text-gray-300 leading-relaxed whitespace-pre-wrap">
-                              {article.content}
-                            </p>
+                            <div 
+                              className="text-gray-300 leading-relaxed"
+                              dangerouslySetInnerHTML={{ 
+                                __html: DOMPurify.sanitize(article.content, {
+                                  ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'a'],
+                                  ALLOWED_ATTR: ['href', 'target', 'rel']
+                                })
+                              }}
+                            />
                           </div>
                         </div>
                       )}

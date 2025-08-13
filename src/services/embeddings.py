@@ -7,9 +7,11 @@ using HuggingFace sentence-transformers for semantic similarity search.
 
 import asyncio
 import logging
+import sys
 from functools import lru_cache
 
 import numpy as np
+from cachetools import LRUCache
 from sentence_transformers import SentenceTransformer
 
 from ..config import get_settings
@@ -31,7 +33,11 @@ class EmbeddingsService:
         self.model_name = self.settings.embedding_model
         self.batch_size = self.settings.embedding_batch_size
         self._model: SentenceTransformer | None = None
-        self._cache: dict[str, list[float]] = {}
+
+        # Implement size-limited LRU cache (max 1000 entries or 100MB)
+        self._cache = LRUCache(maxsize=1000)
+        self._cache_size_bytes = 0
+        self._max_cache_bytes = 100 * 1024 * 1024  # 100MB
 
         logger.info(f"Embeddings service initialized with model: {self.model_name}")
 
@@ -79,7 +85,7 @@ class EmbeddingsService:
 
         # Cache the result
         if use_cache:
-            self._cache[normalized_text] = embedding
+            self._add_to_cache(normalized_text, embedding)
 
         return embedding
 
@@ -181,7 +187,7 @@ class EmbeddingsService:
 
                 # Cache if requested
                 if use_cache:
-                    self._cache[normalized_text] = embedding
+                    self._add_to_cache(normalized_text, embedding)
 
     def _generate_embeddings_batch_sync(self, texts: list[str]) -> list[list[float]]:
         """
@@ -272,6 +278,48 @@ class EmbeddingsService:
 
         return await self.generate_embedding(combined_text)
 
+    def _estimate_embedding_size(self, embedding: list[float]) -> int:
+        """
+        Estimate the memory size of an embedding in bytes.
+        
+        Args:
+            embedding: The embedding vector.
+            
+        Returns:
+            int: Estimated size in bytes.
+        """
+        return sys.getsizeof(embedding) + sum(sys.getsizeof(x) for x in embedding)
+
+    def _add_to_cache(self, key: str, embedding: list[float]) -> None:
+        """
+        Add embedding to cache with memory tracking.
+        
+        Args:
+            key: Cache key.
+            embedding: Embedding to cache.
+        """
+        embedding_size = self._estimate_embedding_size(embedding)
+
+        # Check if adding this would exceed memory limit
+        if self._cache_size_bytes + embedding_size > self._max_cache_bytes:
+            # Clear some old entries to make room
+            while (self._cache_size_bytes + embedding_size > self._max_cache_bytes
+                   and len(self._cache) > 0):
+                # LRUCache automatically removes least recently used items
+                # Just need to track size
+                self._cache.popitem(last=False)  # Remove oldest item
+                self._recalculate_cache_size()
+
+        self._cache[key] = embedding
+        self._cache_size_bytes += embedding_size
+
+    def _recalculate_cache_size(self) -> None:
+        """Recalculate total cache size in bytes."""
+        self._cache_size_bytes = sum(
+            self._estimate_embedding_size(embedding)
+            for embedding in self._cache.values()
+        )
+
     def get_cache_size(self) -> int:
         """
         Get the number of cached embeddings.
@@ -281,9 +329,19 @@ class EmbeddingsService:
         """
         return len(self._cache)
 
+    def get_cache_memory_usage(self) -> int:
+        """
+        Get the memory usage of the cache in bytes.
+        
+        Returns:
+            int: Cache memory usage in bytes.
+        """
+        return self._cache_size_bytes
+
     def clear_cache(self) -> None:
         """Clear the embedding cache."""
         self._cache.clear()
+        self._cache_size_bytes = 0
         logger.info("Embedding cache cleared")
 
     def get_model_info(self) -> dict[str, any]:
@@ -298,6 +356,8 @@ class EmbeddingsService:
             "embedding_dimension": 384,
             "batch_size": self.batch_size,
             "cache_size": self.get_cache_size(),
+            "cache_memory_mb": round(self.get_cache_memory_usage() / (1024 * 1024), 2),
+            "cache_memory_limit_mb": round(self._max_cache_bytes / (1024 * 1024), 2),
             "model_loaded": self._model is not None
         }
 

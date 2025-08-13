@@ -173,7 +173,7 @@ class WebhookDigestPayload(BaseModel):
 
 class PaginationMeta(BaseModel):
     """Standard pagination metadata."""
-    
+
     page: int = Field(..., ge=1, description="Current page number")
     per_page: int = Field(..., ge=1, le=100, description="Items per page")
     total: int = Field(..., ge=0, description="Total number of items")
@@ -184,7 +184,7 @@ class PaginationMeta(BaseModel):
 
 class SearchResponse(BaseModel):
     """Search endpoint response."""
-    
+
     articles: list[Article] = Field(..., description="Search results")
     total: int = Field(..., ge=0, description="Total matching articles")
     query: str = Field(..., description="Search query used")
@@ -193,7 +193,7 @@ class SearchResponse(BaseModel):
 
 class FilterResponse(BaseModel):
     """Filter endpoint response."""
-    
+
     articles: list[Article] = Field(..., description="Filtered articles")
     filters_applied: dict = Field(..., description="Filters that were applied")
     total: int = Field(..., ge=0, description="Total matching articles")
@@ -202,7 +202,7 @@ class FilterResponse(BaseModel):
 
 class PaginatedArticleResponse(BaseModel):
     """Enhanced article list with pagination."""
-    
+
     articles: list[Article] = Field(..., description="Page of articles")
     pagination: PaginationMeta = Field(..., description="Pagination metadata")
     meta: dict = Field(default_factory=dict, description="Additional metadata")
@@ -210,7 +210,7 @@ class PaginatedArticleResponse(BaseModel):
 
 class DigestSummaryItem(BaseModel):
     """Digest summary for list view."""
-    
+
     id: str = Field(..., description="Digest ID")
     date: str = Field(..., description="Digest date")
     title: str = Field(..., description="Digest title")
@@ -224,14 +224,14 @@ class DigestSummaryItem(BaseModel):
 
 class DigestListResponse(BaseModel):
     """Digest list endpoint response."""
-    
+
     digests: list[DigestSummaryItem] = Field(..., description="List of digests")
     pagination: PaginationMeta = Field(..., description="Pagination metadata")
 
 
 class ArticleSummary(BaseModel):
     """Simplified article for digest view."""
-    
+
     id: str = Field(..., description="Article ID")
     title: str = Field(..., description="Article title")
     summary: str | None = Field(None, description="Article summary")
@@ -242,7 +242,7 @@ class ArticleSummary(BaseModel):
 
 class DigestDetailResponse(BaseModel):
     """Single digest endpoint response."""
-    
+
     id: str = Field(..., description="Digest ID")
     date: str = Field(..., description="Digest date")
     title: str = Field(..., description="Digest title")
@@ -257,7 +257,7 @@ class DigestDetailResponse(BaseModel):
 
 class SourceMetadata(BaseModel):
     """Source metadata item."""
-    
+
     name: str = Field(..., description="Source identifier")
     display_name: str = Field(..., description="Display name")
     description: str = Field(..., description="Source description")
@@ -272,7 +272,7 @@ class SourceMetadata(BaseModel):
 
 class SourcesMetadataResponse(BaseModel):
     """Sources metadata endpoint response."""
-    
+
     sources: list[SourceMetadata] = Field(..., description="List of sources")
     total_sources: int = Field(..., ge=0, description="Total number of sources")
     active_sources: int = Field(..., ge=0, description="Number of active sources")
