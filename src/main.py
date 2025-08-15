@@ -72,14 +72,18 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     except Exception as e:
         logger.error(f"Failed to initialize AI services: {e}")
 
-    # Start automated task scheduler
-    try:
-        from .services.scheduler import start_scheduler
-        await start_scheduler()
-        logger.info("Automated task scheduler started")
-    except Exception as e:
-        logger.error(f"Failed to start task scheduler: {e}")
-        logger.warning("Application continuing without automated scheduling")
+    # Start automated task scheduler (disabled by default for serverless)
+    scheduler_enabled = os.getenv("SCHEDULER_ENABLED", "false").lower() in {"1", "true", "yes", "y"}
+    if scheduler_enabled:
+        try:
+            from .services.scheduler import start_scheduler
+            await start_scheduler()
+            logger.info("Automated task scheduler started")
+        except Exception as e:
+            logger.error(f"Failed to start task scheduler: {e}")
+            logger.warning("Application continuing without automated scheduling")
+    else:
+        logger.info("Scheduler disabled (SCHEDULER_ENABLED is false) - running without in-process scheduling")
 
     logger.info("Application startup complete")
 
@@ -88,13 +92,17 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Shutdown
     logger.info("Shutting down AI News Aggregator API")
 
-    # Stop the task scheduler
-    try:
-        from .services.scheduler import stop_scheduler
-        await stop_scheduler()
-        logger.info("Task scheduler stopped")
-    except Exception as e:
-        logger.error(f"Error stopping task scheduler: {e}")
+    # Stop the task scheduler if it was enabled
+    scheduler_enabled = os.getenv("SCHEDULER_ENABLED", "false").lower() in {"1", "true", "yes", "y"}
+    if scheduler_enabled:
+        try:
+            from .services.scheduler import stop_scheduler
+            await stop_scheduler()
+            logger.info("Task scheduler stopped")
+        except Exception as e:
+            logger.error(f"Error stopping task scheduler: {e}")
+    else:
+        logger.info("Scheduler was disabled - no shutdown action required")
 
 
 def create_app() -> FastAPI:
