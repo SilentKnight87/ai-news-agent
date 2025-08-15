@@ -8,12 +8,12 @@ A complete full-stack AI news aggregation platform that fetches, analyzes, and c
 
 ```
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   Web Frontend  │    │   MCP Server     │    │  Backend API    │
-│   (Next.js)     │◄──►│  (Cloudflare     │◄──►│   (FastAPI)     │
-│   ✅ Complete   │    │   Workers)       │    │   ✅ Complete   │
-│                 │    │   ✅ Complete    │    │                 │
+│   Frontend      │    │   MCP Server     │    │  Backend API    │
+│   (Vercel       │◄──►│  (Cloudflare     │◄──►│   (Vercel       │
+│   Next.js)      │    │   Workers)       │    │   Fluid         │
+│   ✅ Complete   │    │   ✅ Complete    │    │   Compute)      │
+│                 │    │                  │    │   ✅ Complete   │
 └─────────────────┘    └──────────────────┘    └─────────────────┘
-         │                        │                        │
          │                        │                        │
          └────────────────────────┼────────────────────────┘
                                   ▼
@@ -27,13 +27,14 @@ A complete full-stack AI news aggregation platform that fetches, analyzes, and c
 
 ## 🚀 Components
 
-### 🖥️ Backend API (✅ Production Ready)
-- **FastAPI** server with async processing
+### 🖥️ Backend API (✅ Production Ready - Vercel Fluid Compute)
+- **FastAPI** server with async processing on **Vercel Fluid Compute**
 - **7 Data Sources**: ArXiv, HackerNews, RSS, YouTube, HuggingFace, Reddit, GitHub
-- **AI-powered analysis** using Google Gemini
+- **AI-powered analysis** using Google Gemini (85-90% cost savings with Fluid)
 - **Semantic deduplication** with vector embeddings
 - **Daily digest generation** with text-to-speech
 - **Comprehensive REST API** with 16+ endpoints
+- **Serverless optimization**: Only pay for active CPU time, not I/O waiting
 
 ### 🔌 MCP Server (✅ Production Deployed)
 - **Model Context Protocol** server on Cloudflare Workers
@@ -43,12 +44,13 @@ A complete full-stack AI news aggregation platform that fetches, analyzes, and c
 - **KV Caching** for performance optimization
 - **Production URL**: `https://my-mcp-server.pbrow35.workers.dev/mcp`
 
-### 🌐 Frontend (✅ Production Ready)
-- **Next.js** modern web interface
+### 🌐 Frontend (✅ Production Ready - Vercel Hosting)
+- **Next.js** modern web interface deployed on **Vercel**
 - **Complete UI Components**: ArticleCard, AudioPlayer, SearchBar, FilterBar
 - **Multiple Pages**: articles, digests, search, sources
 - **Responsive design** with Tailwind CSS
 - **Real-time content** browsing and filtering
+- **Seamless integration**: Same platform as backend for optimal performance
 
 ## 🛠️ Quick Start
 
@@ -267,11 +269,12 @@ graph TD
 - **Uptime**: Production deployment on Cloudflare Workers
 
 ### 🚀 Deployment Status
-- **Backend**: Ready for cloud deployment (Docker configured)
+- **Backend**: Ready for Vercel Fluid Compute deployment (optimized for AI workloads)
 - **MCP Server**: Live on Cloudflare Workers
-- **Frontend**: Ready for Vercel/Netlify deployment
+- **Frontend**: Ready for Vercel deployment with seamless backend integration
 - **Database**: Production Supabase with optimizations
 - **Monitoring**: Real-time health checks and performance tracking
+- **Guide**: Complete deployment guide at [spec/vercel-deployment.md](spec/vercel-deployment.md)
 
 ## 🔐 Security & Performance
 
@@ -282,6 +285,7 @@ graph TD
 - **SQL injection protection** via SQLAlchemy ORM
 - **Rate limiting** for external APIs and abuse prevention
 - **CORS configuration** for cross-origin requests
+- **Vercel Security**: HTTPS by default, secure environment variables
 
 ### Performance Optimizations
 - **Async processing** for concurrent operations
@@ -289,7 +293,9 @@ graph TD
 - **Vector indexing** (HNSW) for fast similarity search
 - **Multi-level caching** (embedding cache, KV cache, response cache)
 - **Background tasks** for non-blocking operations
-- **CDN delivery** via Cloudflare Workers
+- **CDN delivery** via Cloudflare Workers and Vercel Edge Network
+- **Vercel Fluid Compute**: 85-90% cost savings on AI operations, no cold starts
+- **Active CPU billing**: Only pay for actual compute time, not I/O waiting
 
 ## 🛣️ Deployment Options
 
@@ -306,13 +312,20 @@ cd UI && npm run dev
 # Use: https://my-mcp-server.pbrow35.workers.dev/mcp
 ```
 
-### Option 2: Cloud Deployment
-- **Backend**: Deploy to AWS/GCP/Azure with Docker
-- **Frontend**: Deploy to Vercel/Netlify with automatic builds
+### Option 2: Vercel Deployment (Recommended) 🏆
+- **Backend**: Vercel Fluid Compute functions (perfect for AI workloads)
+- **Frontend**: Vercel Next.js hosting with automatic builds
 - **MCP Server**: Already deployed on Cloudflare Workers
 - **Database**: Production Supabase (already configured)
+- **Benefits**: Single platform, no CORS issues, generous free tier
+- **Setup**: See [Vercel Deployment Guide](spec/vercel-deployment.md)
 
-### Option 3: Enterprise Setup
+### Option 3: Alternative Cloud Deployment
+- **Backend**: Deploy to AWS Lambda/GCP Cloud Run/Azure Functions
+- **Frontend**: Deploy to Netlify/other static hosts
+- **Trade-offs**: More complex setup, multiple platforms to manage
+
+### Option 4: Enterprise Setup
 - **Container orchestration** with Kubernetes
 - **Load balancing** for high availability
 - **Database scaling** with read replicas

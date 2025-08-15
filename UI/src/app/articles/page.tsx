@@ -1,6 +1,10 @@
 "use client";
 
+export const dynamic = 'force-dynamic'
+
 import { useSearchParams, useRouter } from "next/navigation";
+import { Suspense } from "react";
+import { Loader2 } from "lucide-react";
 import { Article, SortField, SortOrder } from "@/types";
 import ArticleCard from "@/components/ArticleCard";
 import Pagination from "@/components/Pagination";
@@ -32,7 +36,7 @@ function useQueryState() {
   return { page, perPage, sortBy, order, source, setQuery };
 }
 
-export default function ArticlesPage() {
+function ArticlesPageContent() {
   const { page, perPage, sortBy, order, source, setQuery } = useQueryState();
 
   const { articles, pagination, meta, isLoading, error } = usePaginatedArticles({
@@ -156,4 +160,16 @@ export default function ArticlesPage() {
       ) : null}
     </div>
   );
+}
+
+export default function ArticlesPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-white" />
+      </div>
+    }>
+      <ArticlesPageContent />
+    </Suspense>
+  )
 }
