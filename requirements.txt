@@ -32,3 +32,5 @@ pytest-asyncio
 pytest-mock
 ruff
 mypy
+# Caching
+cachetools
