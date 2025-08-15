@@ -1,6 +1,8 @@
 "use client"
 
-import { useState, useEffect } from "react"
+export const dynamic = 'force-dynamic'
+
+import { useState, useEffect, Suspense } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { Search, Loader2, AlertCircle, Clock, Filter } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
@@ -25,7 +27,7 @@ const SOURCE_OPTIONS = [
   { id: "github", label: "GitHub" },
 ]
 
-export default function SearchPage() {
+function SearchPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   
@@ -224,9 +226,9 @@ export default function SearchPage() {
               {totalPages > 1 && (
                 <div className="mt-12 flex justify-center">
                   <Pagination
-                    currentPage={currentPage}
+                    page={currentPage}
                     totalPages={totalPages}
-                    onPageChange={handlePageChange}
+                    onChange={handlePageChange}
                   />
                 </div>
               )}
@@ -242,5 +244,17 @@ export default function SearchPage() {
         onClose={() => setSelectedArticle(null)}
       />
     </div>
+  )
+}
+
+export default function SearchPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-white" />
+      </div>
+    }>
+      <SearchPageContent />
+    </Suspense>
   )
 }

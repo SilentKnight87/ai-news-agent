@@ -190,17 +190,16 @@ export default function ArticleModal({ article, isOpen, onClose }: ArticleModalP
                       </div>
 
                       {/* Key Points - Use actual data */}
-                      {article.key_points && article.key_points.length > 0 ? (
+                      {article.categories && article.categories.length > 0 ? (
                         <div>
-                          <h3 className="text-lg font-semibold text-white mb-3">Key Points</h3>
-                          <ul className="space-y-2">
-                            {article.key_points.map((point, index) => (
-                              <li key={index} className="flex items-start">
-                                <span className="text-green-400 mr-2 mt-1">•</span>
-                                <span className="text-gray-300">{point}</span>
-                              </li>
+                          <h3 className="text-lg font-semibold text-white mb-3">Categories</h3>
+                          <div className="flex flex-wrap gap-2">
+                            {article.categories.map((category, index) => (
+                              <span key={index} className="bg-gray-800 text-green-400 px-3 py-1 rounded-full text-sm">
+                                {category}
+                              </span>
                             ))}
-                          </ul>
+                          </div>
                         </div>
                       ) : null}
 

@@ -80,8 +80,7 @@ export default function Home() {
       {/* Hero Section */}
       <HeroSection 
         digest={digestData} 
-        stats={statsData} 
-        onRefresh={handleRefresh}
+        stats={statsData}
       />
 
       {/* Filter Bar */}

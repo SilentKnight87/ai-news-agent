@@ -1,6 +1,45 @@
+# AI News Aggregator MCP Server
+
+🚀 **PRODUCTION DEPLOYED**: https://my-mcp-server.pbrow35.workers.dev/mcp
+
+## ✅ **Production Status**
+
+This MCP server is **100% complete and deployed** to Cloudflare Workers, providing real-time AI news aggregation tools for Claude, Cursor, and other MCP-compatible AI assistants.
+
+### **Live Tools Available:**
+1. **search_articles** - Full-text search across AI/ML articles with caching
+2. **get_latest_articles** - Recent articles from past N hours with filtering
+3. **get_article_stats** - Comprehensive database statistics and metrics
+4. **get_digests** - Paginated daily digests with audio content
+5. **get_digest_by_id** - Individual digest details with article lists
+6. **get_sources** - News source metadata and processing statistics
+
+### **Features:**
+- ✅ **GitHub OAuth Authentication** for secure access
+- ✅ **Real-time Database Integration** with production news data
+- ✅ **Cloudflare KV Caching** for optimal performance
+- ✅ **Error Handling & Monitoring** for production reliability
+- ✅ **6 Specialized Tools** for AI news consumption
+
+### **Integration:**
+Add to your Claude Desktop or MCP-compatible client:
+```json
+{
+  "mcpServers": {
+    "ai-news-aggregator": {
+      "command": "npx",
+      "args": ["@modelcontextprotocol/server-http", "https://my-mcp-server.pbrow35.workers.dev/mcp"],
+      "env": {}
+    }
+  }
+}
+```
+
+---
+
 # MCP Server Builder - Context Engineering Use Case
 
-This use case demonstrates how to use **Context Engineering** and the **PRP (Product Requirements Prompt) process** to build production-ready Model Context Protocol (MCP) servers. It provides a proven template and workflow for creating MCP servers with GitHub OAuth authentication, database integration, and Cloudflare Workers deployment.
+This directory also serves as a demonstration of how to use **Context Engineering** and the **PRP (Product Requirements Prompt) process** to build production-ready Model Context Protocol (MCP) servers. It provides a proven template and workflow for creating MCP servers with GitHub OAuth authentication, database integration, and Cloudflare Workers deployment.
 
 > A PRP is PRD + curated codebase intelligence + agent/runbook—the minimum viable packet an AI needs to plausibly ship production-ready code on the first pass.
 
