@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     gemini_api_key: str = Field(..., description="Google Gemini API key")
     elevenlabs_api_key: str | None = Field(None, description="ElevenLabs API key for TTS")
     hf_api_key: str | None = Field(None, description="HuggingFace API key")
+    openai_api_key: str | None = Field(None, description="OpenAI API key for embeddings")
 
     # Reddit API credentials
     reddit_client_id: str | None = Field(None, description="Reddit OAuth client ID")
@@ -53,6 +54,7 @@ class Settings(BaseSettings):
     # Embedding configuration
     embedding_model: str = Field("sentence-transformers/all-MiniLM-L6-v2", description="HuggingFace embedding model")
     embedding_batch_size: int = Field(100, description="Batch size for embedding generation")
+    embeddings_provider: str = Field("local", description="Embeddings provider: local, openai, huggingface")
 
     # CORS configuration
     cors_allowed_origins: str = Field(

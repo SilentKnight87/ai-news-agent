@@ -124,17 +124,27 @@ def create_app() -> FastAPI:
         lifespan=lifespan
     )
 
-    # Add CORS middleware with secure configuration
-    ALLOWED_ORIGINS = settings.cors_allowed_origins.split(",") if settings.cors_allowed_origins else []
+    # Configure middleware based on environment
+    is_production = os.getenv("NODE_ENV") == "production" or os.getenv("VERCEL") == "1"
+    
+    if is_production:
+        # Use enhanced production middleware for Vercel
+        from .middleware import setup_production_middleware
+        setup_production_middleware(app, settings)
+        logger.info("Production middleware configured for Vercel deployment")
+    else:
+        # Use standard CORS middleware for development
+        ALLOWED_ORIGINS = settings.cors_allowed_origins.split(",") if settings.cors_allowed_origins else []
 
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=ALLOWED_ORIGINS or ["http://localhost:3000"],  # Fallback for dev
-        allow_credentials=True,
-        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        allow_headers=["*"],
-        max_age=3600,
-    )
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=ALLOWED_ORIGINS or ["http://localhost:3000"],  # Fallback for dev
+            allow_credentials=True,
+            allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+            allow_headers=["*"],
+            max_age=3600,
+        )
+        logger.info("Development CORS middleware configured")
 
     # Include API routes
     app.include_router(router, prefix="/api/v1")
