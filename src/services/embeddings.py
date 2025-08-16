@@ -363,11 +363,33 @@ class EmbeddingsService:
 
 
 @lru_cache
-def get_embeddings_service() -> EmbeddingsService:
+def get_embeddings_service():
     """
     Get singleton embeddings service instance.
+    
+    Uses factory pattern to select appropriate embeddings provider based on
+    environment configuration. In production (Vercel), uses external APIs
+    to avoid deployment size limits.
 
     Returns:
         EmbeddingsService: Singleton service instance.
     """
-    return EmbeddingsService()
+    settings = get_settings()
+    provider = getattr(settings, 'embeddings_provider', 'local').lower()
+    
+    if provider == 'openai':
+        from .embeddings_openai import OpenAIEmbeddingsService
+        api_key = getattr(settings, 'openai_api_key', None)
+        if not api_key:
+            raise ValueError("OPENAI_API_KEY environment variable required for OpenAI embeddings")
+        logger.info("Using OpenAI embeddings service for production")
+        return OpenAIEmbeddingsService(api_key)
+    
+    # TODO: Add HuggingFace provider
+    # elif provider == 'huggingface':
+    #     from .embeddings_hf import HuggingFaceEmbeddingsService
+    #     return HuggingFaceEmbeddingsService(settings.hf_api_key)
+    
+    else:  # local development (default)
+        logger.info("Using local embeddings service for development")
+        return EmbeddingsService()

@@ -2,7 +2,7 @@
   "functions": {
     "api/index.py": {
       "runtime": "python3.11",
-      "memory": 1024,
+      "memory": 512,
       "maxDuration": 300
     }
   },
@@ -11,5 +11,6 @@
       "source": "/api/v1/(.*)",
       "destination": "/api/index"
     }
-  ]
+  ],
+  "installCommand": "pip install -r requirements.prod.txt"
 }
