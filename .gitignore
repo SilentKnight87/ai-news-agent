@@ -115,3 +115,31 @@ Thumbs.db
 *.backup
 *.orig
 .vercel
+
+# Additional security files
+.env.local
+.env.production
+.env.development
+config.local.json
+settings.local.json
+auth.json
+token.json
+service-account.json
+
+# Docker secrets (if using containers later)
+docker-compose.override.yml
+.dockerenv
+
+# CI/CD and deployment files with potential secrets
+.github/workflows/*local*
+terraform.tfvars
+ansible/vault.yml
+k8s/secrets/
+
+# Additional API keys and tokens
+*.token
+refresh_token
+access_token
+github_token
+openai_key
+supabase_key

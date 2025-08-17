@@ -6,6 +6,7 @@ including database connections and service instances.
 """
 
 import logging
+import os
 from functools import lru_cache
 from typing import Annotated
 
@@ -33,6 +34,10 @@ def get_supabase_client() -> Client:
     """
     settings = get_settings()
 
+    # Prefer service role key for write operations (GitHub Actions)
+    service_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    key_to_use = service_key if service_key else settings.supabase_anon_key
+
     # Configure connection pool
     options = ClientOptions(
         schema="public",
@@ -48,14 +53,11 @@ def get_supabase_client() -> Client:
         }
     )
 
-    # Create client with custom httpx client for pooling
-    limits = httpx.Limits(max_keepalive_connections=5, max_connections=10)
-    timeout = httpx.Timeout(10.0, connect=5.0)
-    transport = httpx.HTTPTransport(limits=limits, retries=3)
+    # Create client with connection pooling
 
     client = create_client(
         settings.supabase_url,
-        settings.supabase_anon_key,
+        key_to_use,  # Use service key if available
         options=options
     )
 
@@ -103,12 +105,3 @@ def get_news_analyzer():
     return get_analyzer_instance()
 
 
-def get_embeddings_service():
-    """
-    Get embeddings service instance.
-
-    Returns:
-        EmbeddingsService: Embeddings service.
-    """
-    from src.services.embeddings import EmbeddingsService
-    return EmbeddingsService()
