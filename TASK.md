@@ -377,6 +377,30 @@ The app is **fully functional** when:
 - **Production Deployment**: All three components successfully deployed and operational
 - **Mock Data Backend**: API endpoints working with mock data while database connection troubleshooted
 
+## ✅ **COMPLETED: GitHub Actions Direct Execution** 
+**Added**: 2025-08-17  
+**Status**: ✅ **IMPLEMENTATION COMPLETE**  
+**PRP**: @PRPs/github-actions-direct-execution.md
+
+**COMPLETED**: Direct execution of Python pipeline tasks via GitHub Actions runners to restore the AI News Aggregator pipeline that has been dormant since August 10th. Implementation enables automated article fetching (every 30 minutes) and daily digest generation (at 5 PM UTC) without requiring backend infrastructure deployment.
+
+**✅ All 5 Tasks Completed:**
+1. ✅ Updated requirements.txt with full dependencies for CLI execution
+2. ✅ Modified Supabase client for service role key support  
+3. ✅ Created fetch articles CLI wrapper (scripts/fetch_articles.py)
+4. ✅ Created digest generation CLI wrapper (scripts/generate_digest.py)
+5. ✅ Created GitHub Actions workflow (.github/workflows/pipeline.yml)
+
+**✅ Validation Complete:**
+- ✅ Syntax and style validation passed (ruff fixes applied)
+- ✅ MCP verification confirmed database state (452 articles, 0 recent, pipeline dormant since Aug 10)
+- ✅ Implementation ready for GitHub Secrets configuration and deployment
+
+**🔄 Next Steps (Manual):**
+1. Configure GitHub Secrets (SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, GEMINI_API_KEY)
+2. Test manual workflow trigger via GitHub Actions tab
+3. Monitor scheduled execution (every 30min for fetch, 5PM UTC for digest)
+
 ## 📋 **PHASE 2: COMPREHENSIVE TESTING & OPTIMIZATION** 🧪
 
 ### 🎯 **IMMEDIATE PRIORITIES**

@@ -1,3 +1,21 @@
-# Minimal working dependencies for Vercel
-supabase
+# Core (required for imports)
+fastapi
+pydantic>=2.5.0
+pydantic-settings
+python-dotenv
+
+# Data fetching
+arxiv
+feedparser
 httpx
+aiohttp
+
+# Database
+supabase
+
+# Utilities
+tenacity
+
+# Optional (uncomment if needed)
+# elevenlabs  # Only if TTS enabled
+# NOTE: Do NOT add uvicorn or sqlalchemy unless needed
