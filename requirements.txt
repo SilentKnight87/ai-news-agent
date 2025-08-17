@@ -4,6 +4,9 @@ pydantic>=2.5.0
 pydantic-settings
 python-dotenv
 
+# AI/ML
+pydantic-ai
+
 # Data fetching
 arxiv
 feedparser
@@ -16,6 +19,7 @@ supabase
 # Utilities
 tenacity
 
-# Optional (uncomment if needed)
-# elevenlabs  # Only if TTS enabled
+# Audio (uncomment if TTS enabled)
+elevenlabs
+
 # NOTE: Do NOT add uvicorn or sqlalchemy unless needed
