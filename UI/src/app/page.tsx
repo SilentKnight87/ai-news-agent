@@ -113,7 +113,7 @@ export default function Home() {
             title="Daily AI Digest Articles" 
             subtitle="Today's curated AI news with audio summary"
           >
-            {digestData.articles.map((article) => (
+            {digestData.articles.map((article: Article) => (
               <ArticleCard
                 key={article.id}
                 article={article}

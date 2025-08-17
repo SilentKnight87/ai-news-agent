@@ -10,27 +10,17 @@
         "DEFAULT_MINIMUM_TOKENS": ""
       }
     },
-    "playwright": {
+    "supabase": {
       "command": "npx",
       "args": [
         "-y",
-        "@playwright/mcp@latest",
-        "--browser=",
-        "--headless=",
-        "--viewport-size="
-      ]
-    },
-    "supabase": {
-        "command": "npx",
-        "args": [
-          "-y",
-          "@supabase/mcp-server-supabase@latest",
-          "--read-only",
-          "--project-ref=iefwotxmjknmrairzyrn"
-        ],
-        "env": {
-          "SUPABASE_ACCESS_TOKEN": "sbp_e7bc9e8f1b490aecd3ece37a54c6ffd896a1c479"
-        }
+        "@supabase/mcp-server-supabase@latest",
+        "--read-only",
+        "--project-ref=iefwotxmjknmrairzyrn"
+      ],
+      "env": {
+        "SUPABASE_ACCESS_TOKEN": "sbp_e7bc9e8f1b490aecd3ece37a54c6ffd896a1c479"
       }
+    }
   }
 }

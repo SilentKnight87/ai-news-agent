@@ -261,12 +261,30 @@ class CORSSecurityMiddleware(BaseHTTPMiddleware):
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
         
-        # Enhanced CORS validation
+        # Enhanced CORS validation with wildcard support
         origin = request.headers.get("origin")
         if origin and self.allowed_origins:
+            origin_allowed = False
+            
+            # Check direct match first
             if origin in self.allowed_origins:
+                origin_allowed = True
+            else:
+                # Check wildcard patterns (e.g., https://*.vercel.app)
+                for allowed_origin in self.allowed_origins:
+                    if "*" in allowed_origin:
+                        # Convert wildcard pattern to regex
+                        pattern = allowed_origin.replace("*", ".*")
+                        import re
+                        if re.match(f"^{pattern}$", origin):
+                            origin_allowed = True
+                            break
+            
+            if origin_allowed:
                 response.headers["Access-Control-Allow-Origin"] = origin
                 response.headers["Access-Control-Allow-Credentials"] = "true"
+                response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+                response.headers["Access-Control-Allow-Headers"] = "*"
                 response.headers["Vary"] = "Origin"
             else:
                 logger.warning(

@@ -12,7 +12,6 @@ from functools import lru_cache
 
 import numpy as np
 from cachetools import LRUCache
-from sentence_transformers import SentenceTransformer
 
 from ..config import get_settings
 
@@ -32,7 +31,7 @@ class EmbeddingsService:
         self.settings = get_settings()
         self.model_name = self.settings.embedding_model
         self.batch_size = self.settings.embedding_batch_size
-        self._model: SentenceTransformer | None = None
+        self._model = None  # Will be SentenceTransformer when loaded
 
         # Implement size-limited LRU cache (max 1000 entries or 100MB)
         self._cache = LRUCache(maxsize=1000)
@@ -42,7 +41,7 @@ class EmbeddingsService:
         logger.info(f"Embeddings service initialized with model: {self.model_name}")
 
     @property
-    def model(self) -> SentenceTransformer:
+    def model(self):
         """
         Lazy-load the sentence transformer model.
 
@@ -51,6 +50,7 @@ class EmbeddingsService:
         """
         if self._model is None:
             logger.info(f"Loading sentence transformer model: {self.model_name}")
+            from sentence_transformers import SentenceTransformer
             self._model = SentenceTransformer(self.model_name)
             logger.info("Model loaded successfully")
 
@@ -384,6 +384,14 @@ def get_embeddings_service():
             raise ValueError("OPENAI_API_KEY environment variable required for OpenAI embeddings")
         logger.info("Using OpenAI embeddings service for production")
         return OpenAIEmbeddingsService(api_key)
+    
+    elif provider == 'gemini':
+        from .embeddings_gemini import GeminiEmbeddingsService
+        api_key = getattr(settings, 'gemini_api_key', None)
+        if not api_key:
+            raise ValueError("GEMINI_API_KEY environment variable required for Gemini embeddings")
+        logger.info("Using Gemini embeddings service for production")
+        return GeminiEmbeddingsService(api_key)
     
     # TODO: Add HuggingFace provider
     # elif provider == 'huggingface':
