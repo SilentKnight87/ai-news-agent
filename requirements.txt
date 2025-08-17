@@ -1,4 +1,4 @@
-# Core (required for imports)
+# Core FastAPI and Pydantic
 fastapi
 pydantic>=2.5.0
 pydantic-settings
@@ -6,20 +6,28 @@ python-dotenv
 
 # AI/ML
 pydantic-ai
+numpy
 
-# Data fetching
+# Data fetching and HTTP
 arxiv
 feedparser
 httpx
 aiohttp
 
-# Database
+# Database and ORM
 supabase
+sqlalchemy
+
+# File operations
+aiofiles
+
+# Caching
+cachetools
+
+# Audio/TTS
+elevenlabs
 
 # Utilities
 tenacity
 
-# Audio (uncomment if TTS enabled)
-elevenlabs
-
-# NOTE: Do NOT add uvicorn or sqlalchemy unless needed
+# NOTE: Do NOT add uvicorn - not needed for CLI execution
