@@ -30,7 +30,7 @@ export function useDigest() {
 }
 
 export function useStats() {
-  return useSWR('stats', api.stats, {
+  return useSWR('stats', api.stats.get, {
     refreshInterval: 30000, // Refresh every 30 seconds
   })
 }

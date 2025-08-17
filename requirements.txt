@@ -1,36 +1,3 @@
-# Core
-fastapi
-uvicorn[standard]
-pydantic>=2.5.0
-pydantic-settings
-pydantic-ai
-python-dotenv
-
-# Data fetching
-arxiv
-feedparser
-httpx
-aiohttp
-
-# AI/ML
-sentence-transformers
-
-# Database
+# Minimal working dependencies for Vercel
 supabase
-sqlalchemy
-
-# Utilities
-tenacity
-aiofiles
-
-# Audio/TTS
-elevenlabs
-
-# Dev/Test
-pytest
-pytest-asyncio
-pytest-mock
-ruff
-mypy
-# Caching
-cachetools
+httpx

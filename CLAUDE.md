@@ -73,6 +73,8 @@
   - Has access to all tools including web search and documentation
 - Don't wait to be asked - if the task matches an agent's purpose, use it immediately
 
+Always use the `date` command when you need to know the current date and time.
+
 DO NOT include the following in code comments:
 " 🤖 Generated with [Claude Code](https://claude.ai/code)
 Co-Authored-By: Claude <noreply@anthropic.com>"
