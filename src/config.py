@@ -19,7 +19,7 @@ class Settings(BaseSettings):
 
     # Supabase configuration
     supabase_url: str = Field(..., description="Supabase project URL")
-    supabase_anon_key: str = Field(..., description="Supabase anonymous key")
+    supabase_anon_key: str | None = Field(None, description="Supabase anonymous key (optional if service role key available)")
 
     # AI Service API keys
     gemini_api_key: str = Field(..., description="Google Gemini API key")

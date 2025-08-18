@@ -37,6 +37,9 @@ def get_supabase_client() -> Client:
     # Prefer service role key for write operations (GitHub Actions)
     service_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     key_to_use = service_key if service_key else settings.supabase_anon_key
+    
+    if not key_to_use:
+        raise ValueError("Either SUPABASE_SERVICE_ROLE_KEY environment variable or supabase_anon_key setting must be provided")
 
     # Configure connection pool
     options = ClientOptions(
