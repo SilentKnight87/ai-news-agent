@@ -459,7 +459,7 @@ mcp__supabase__list_tables(schemas=["public"])
 ### Post-Implementation Validation
 ```bash
 # 1. Syntax and type checking
-cd /Users/peterbrown/Documents/Code/ai-news-aggregator-agent
+cd ai-news-aggregator-agent
 source venv_linux/bin/activate
 ruff check src/api/routes.py src/repositories/articles.py --fix
 mypy src/api/routes.py src/repositories/articles.py

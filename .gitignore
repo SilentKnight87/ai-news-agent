@@ -143,3 +143,5 @@ access_token
 github_token
 openai_key
 supabase_key
+
+.kilocode/

@@ -487,7 +487,7 @@ ROUTES:
 ### Level 1: Syntax & Style
 ```bash
 # Run these FIRST - fix any errors before proceeding
-cd /Users/peterbrown/Documents/Code/ai-news-aggregator-agent
+cd ai-news-aggregator-agent
 source .venv/bin/activate  # or your venv path
 
 ruff check src/api/ --fix

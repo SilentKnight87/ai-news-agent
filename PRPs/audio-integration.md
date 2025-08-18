@@ -510,7 +510,7 @@ ROUTES:
 
 ### Level 1: Syntax & Style
 ```bash
-cd /Users/peterbrown/Documents/Code/ai-news-aggregator-agent
+cd ai-news-aggregator-agent
 source .venv/bin/activate
 
 # Check all modified files

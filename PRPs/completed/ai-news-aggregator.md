@@ -85,7 +85,6 @@ Create an automated pipeline that:
 ai-news-aggregator-agent/
 ├── CLAUDE.md
 ├── INITIAL.md
-├── PLANNING.md
 ├── TASK.md
 ├── PRPs/
 │   └── templates/
