@@ -401,6 +401,50 @@ The app is **fully functional** when:
 2. Test manual workflow trigger via GitHub Actions tab
 3. Monitor scheduled execution (every 30min for fetch, 5PM UTC for digest)
 
+## ❌ **CRITICAL: Frontend Supabase Direct Migration** 🚨
+**Added**: 2025-08-18  
+**Status**: ✅ **SPECIFICATION COMPLETE** - Implementation Required  
+**Priority**: CRITICAL for v1  
+**Reference**: @spec/frontend-supabase-direct.md
+
+**CRITICAL DATABASE MIGRATION REQUIRED**:
+```sql
+-- Must run in Supabase SQL Editor before frontend implementation
+ALTER TYPE article_source ADD VALUE 'youtube';
+ALTER TYPE article_source ADD VALUE 'huggingface'; 
+ALTER TYPE article_source ADD VALUE 'reddit';
+ALTER TYPE article_source ADD VALUE 'github';
+```
+
+**SPECIFICATION STATUS**: ✅ Complete comprehensive JAMstack migration plan
+- ✅ Database schema analysis and enum fixes
+- ✅ Vector embedding type corrections (TEXT → vector(384))
+- ✅ TypeScript type definitions with audio fields
+- ✅ RLS policy naming conflict resolution
+- ✅ Dependencies and package.json updates
+- ✅ Migration path from API-dependent to JAMstack architecture
+
+**IMPLEMENTATION REQUIRED**:
+1. **Run Database Migration** (CRITICAL - blocks all frontend work)
+   - Execute enum migration in Supabase SQL Editor
+   - Verify all 7 source types are available
+   - Fix SQLAlchemy model vector type mismatch
+
+2. **Frontend Implementation** (Following @spec/frontend-supabase-direct.md)
+   - Replace API calls with direct Supabase client access
+   - Implement client-side pagination and filtering
+   - Add real-time subscriptions for live updates
+   - Migrate authentication to Supabase Auth
+   - Update all components to use Supabase data types
+
+3. **Security & Performance**
+   - Implement Row Level Security policies
+   - Configure client-side caching strategies
+   - Add error handling for offline scenarios
+   - Test all security boundaries
+
+**IMPACT**: This migration eliminates the need for backend API deployment while maintaining all functionality through direct database access.
+
 ## 📋 **PHASE 2: COMPREHENSIVE TESTING & OPTIMIZATION** 🧪
 
 ### 🎯 **IMMEDIATE PRIORITIES**
@@ -443,3 +487,88 @@ The app is **fully functional** when:
 3. **Mock Data**: Backend serving fallback data instead of real database content
 4. **Documentation**: ASGI implementation needs comprehensive documentation
 5. **Testing**: No automated testing suite for production deployment
+6. **Frontend Migration**: Complete transition to JAMstack architecture required
+7. **Database Schema**: Critical enum and vector type mismatches need resolution
+
+---
+
+## 🔍 **DISCOVERED DURING WORK - NEW REQUIREMENTS**
+*Added automatically as new tasks are discovered during development*
+
+### **From Frontend Supabase Direct Review (2025-08-18)**
+
+#### **Critical Database Issues** ⚠️
+- [ ] **URGENT: Run Database Enum Migration** 
+  - Missing 4 source types in database enum vs Python models
+  - Commands ready in @spec/frontend-supabase-direct.md
+  - **BLOCKS**: All frontend migration work
+
+- [ ] **Fix Vector Type Inconsistency**
+  - Database uses vector(384), SQLAlchemy model uses Text
+  - Need to update Python model to match database schema
+  - **IMPACT**: Embedding functionality may be inconsistent
+
+#### **Frontend Migration Implementation** 🚀
+- [ ] **Replace API Dependencies with Supabase Client**
+  - Update all data fetching to use @supabase/supabase-js
+  - Implement client-side pagination and filtering
+  - Add real-time subscriptions for live updates
+  - **BENEFIT**: Eliminates backend deployment dependency
+
+- [ ] **Implement Security Layer**
+  - Configure Row Level Security policies
+  - Add authentication flow with Supabase Auth
+  - Test security boundaries for data access
+  - **CRITICAL**: Ensure data security in JAMstack architecture
+
+#### **Technical Debt Resolution** 🧹
+- [ ] **Update TypeScript Types**
+  - Add missing audio fields to daily_digests interface
+  - Align all types with database schema
+  - **IMPACT**: Prevents TypeScript compilation errors
+
+- [ ] **RLS Policy Cleanup**
+  - Rename conflicting policies with unique names
+  - Optimize policy performance per Supabase advisors
+  - **BENEFIT**: Better database performance and security
+
+---
+
+## 🎯 **V1 COMPLETION ROADMAP**
+*Everything needed to ship v1 and move on*
+
+### **CRITICAL PATH** (Must complete in order)
+1. **Database Migration** (30 min) - Run enum + vector type updates
+2. **Frontend Implementation** (2-3 days) - Follow @spec/frontend-supabase-direct.md
+3. **Security Testing** (1 day) - Validate RLS policies and auth flow
+4. **Performance Optimization** (1 day) - Apply Supabase advisor recommendations
+5. **End-to-End Testing** (1 day) - Comprehensive validation across all components
+
+### **OPTIONAL ENHANCEMENTS** (Post-v1)
+- Advanced search with semantic similarity
+- Real-time collaboration features
+- Mobile app development
+- Advanced analytics and insights
+- Community features and social sharing
+
+### **SUCCESS CRITERIA FOR V1**
+✅ **Functional Requirements**:
+- Users can browse, search, and filter AI news articles
+- Daily digests generate with audio playback
+- MCP server enables AI assistant integration
+- Frontend works without backend API dependency
+- All 7 news sources feeding content actively
+
+✅ **Technical Requirements**:
+- No critical security vulnerabilities
+- Sub-3 second page load times
+- Mobile responsive design
+- Database performance optimized
+- Comprehensive error handling
+
+✅ **Deployment Requirements**:
+- Frontend deployed and accessible
+- Database stable and performing well
+- MCP server operational for AI assistants
+- GitHub Actions pipeline running smoothly
+- All environment secrets properly configured

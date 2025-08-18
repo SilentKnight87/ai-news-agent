@@ -145,3 +145,20 @@ openai_key
 supabase_key
 
 .kilocode/
+
+# Next.js build artifacts
+UI/.next/
+.next/
+UI/out/
+out/
+
+# Node.js
+UI/node_modules/
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# TypeScript
+UI/*.tsbuildinfo
+*.tsbuildinfo
