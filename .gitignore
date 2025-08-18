@@ -20,7 +20,9 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
+# Python packaging lib directories only  
+/lib/
+python-lib/
 lib64/
 parts/
 sdist/
