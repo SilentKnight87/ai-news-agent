@@ -34,8 +34,8 @@ class GeminiEmbeddingsService:
             api_key: Google Gemini API key for authentication.
         """
         self.api_key = api_key
-        self.model_name = "gemini-embedding-001"
-        self.base_url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent"
+        self.model_name = "text-embedding-004"
+        self.base_url = "https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent"
         
         # Implement size-limited LRU cache (max 1000 entries)
         self._cache = LRUCache(maxsize=1000)
