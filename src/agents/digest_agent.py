@@ -74,7 +74,7 @@ class DigestAgent:
 
             # Generate digest summary using AI
             result = await self.agent.run(input_text)
-            digest_summary = result.data
+            digest_summary = result.output
 
             # Create DailyDigest object
             digest = DailyDigest(
@@ -231,7 +231,7 @@ Summarize these {len(articles)} AI/ML articles in {max_length} characters:
 """
 
             result = await quick_agent.run(input_text)
-            return result.data.strip()
+            return result.output.strip()
 
         except Exception as e:
             logger.error(f"Failed to generate quick summary: {e}")
@@ -281,7 +281,7 @@ Please emphasize developments related to {theme} and how they connect to broader
 """
 
             result = await self.agent.run(input_text)
-            digest_summary = result.data
+            digest_summary = result.output
 
             # Create themed digest
             digest = DailyDigest(

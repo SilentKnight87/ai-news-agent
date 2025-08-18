@@ -66,9 +66,9 @@ class NewsAnalyzer:
             # Run the agent
             result = await self.agent.run(input_text)
 
-            logger.debug(f"Analysis complete. Relevance score: {result.data.relevance_score}")
+            logger.debug(f"Analysis complete. Relevance score: {result.output.relevance_score}")
 
-            return result.data
+            return result.output
 
         except Exception as e:
             logger.error(f"Failed to analyze article '{article.title}': {e}")
@@ -183,7 +183,7 @@ Content: {content}
 
             result = await filter_agent.run(input_text)
 
-            return result.data.strip().upper() == "RELEVANT"
+            return result.output.strip().upper() == "RELEVANT"
 
         except Exception as e:
             logger.warning(f"Quick relevance check failed: {e}")
