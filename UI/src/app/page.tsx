@@ -9,7 +9,6 @@ import ArticleModal from "@/components/ArticleModal"
 import { SkeletonRow } from "@/components/Skeleton"
 import { useArticles, useDigest, useStats } from "@/hooks/useArticles"
 import { Article } from "@/types"
-import { api } from "@/lib/api"
 
 const sources = [
   { id: "arxiv", label: "ArXiv Research Papers", subtitle: "Latest AI research from ArXiv" },
@@ -79,7 +78,7 @@ export default function Home() {
     <div className="min-h-screen bg-black">
       {/* Hero Section */}
       <HeroSection 
-        digest={digestData} 
+        digest={digestData || undefined} 
         stats={statsData}
       />
 

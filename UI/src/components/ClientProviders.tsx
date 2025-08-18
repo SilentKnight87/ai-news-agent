@@ -2,44 +2,61 @@
 
 import { SWRConfig } from "swr";
 import { ReactNode } from "react";
-import { fetcher, swrConfig, APIError } from "@/lib/fetcher";
 import { Toaster, toast } from "react-hot-toast";
+import { useErrorDisplay } from "@/hooks/useSupabaseError";
+import { PostgrestError } from '@supabase/supabase-js';
 
 interface ClientProvidersProps {
   children: ReactNode;
 }
 
 export default function ClientProviders({ children }: ClientProvidersProps) {
+  const { getDisplayMessage, shouldShowRetry } = useErrorDisplay();
+
   return (
     <>
       <SWRConfig
         value={{
-          fetcher,
-          ...swrConfig,
-          // Don't spam the user with toasts for 404s on optional widgets (stats/digest etc.)
+          revalidateOnFocus: false,
+          revalidateOnReconnect: true,
+          dedupingInterval: 60000,
+          errorRetryCount: 3,
+          errorRetryInterval: 5000,
+          // Global error handling for Supabase errors
           onError: (err: unknown) => {
-            if (err instanceof APIError) {
-              if (err.status === 404) return; // silent for not found
-              if (err.status === 500) {
-                toast.error("Server error. Please try again.");
-                return;
-              }
-              toast.error(err.message || "Something went wrong");
+            // Handle PostgrestError (Supabase database errors)
+            if (typeof err === 'object' && err !== null && 'code' in err) {
+              const postgrestError = err as PostgrestError;
+              
+              // Don't show toasts for expected "no data" scenarios
+              if (postgrestError.code === 'PGRST204') return;
+              
+              // Show user-friendly error messages
+              const message = getDisplayMessage(err);
+              toast.error(message);
               return;
             }
-            // Network or unknown error
-            // Keep this low-noise; log to console and show a generic toast once
-            // Users will still see component-level fallbacks
-            // eslint-disable-next-line no-console
-            console.error(err);
-            toast.error("Network error");
+
+            // Handle network/connection errors
+            if (err instanceof Error) {
+              if (err.message.includes('fetch') || err.message.includes('network')) {
+                toast.error("Connection failed. Please check your internet connection.");
+                return;
+              }
+              
+              // Generic error handling
+              console.error('SWR Error:', err);
+              toast.error(getDisplayMessage(err));
+              return;
+            }
+
+            // Unknown error type
+            console.error('Unknown SWR error:', err);
+            toast.error("An unexpected error occurred");
           },
           shouldRetryOnError: (err: unknown) => {
-            if (err instanceof APIError) {
-              // Don't retry on client or not-found errors
-              if ([401, 403, 404, 422].includes(err.status)) return false;
-            }
-            return true;
+            // Use our error handling logic to determine if we should retry
+            return shouldShowRetry(err);
           },
         }}
       >
@@ -48,7 +65,12 @@ export default function ClientProviders({ children }: ClientProvidersProps) {
       <Toaster
         position="top-right"
         toastOptions={{
-          style: { background: "#111827", color: "#fff", border: "1px solid #1f2937" },
+          style: { 
+            background: "#111827", 
+            color: "#fff", 
+            border: "1px solid #1f2937"
+          },
+          duration: 4000,
         }}
       />
     </>

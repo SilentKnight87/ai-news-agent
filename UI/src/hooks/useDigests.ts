@@ -1,7 +1,8 @@
 "use client"
 
 import useSWR, { SWRResponse } from "swr"
-import { Digest, DigestSummary } from "@/types"
+import { supabaseQueries } from "@/lib/supabase-queries"
+import { Digest, DigestSummary, PaginationMeta } from "@/types"
 
 export interface DigestsParams {
   page?: number
@@ -12,14 +13,7 @@ export interface DigestsParams {
 
 export interface DigestsResponse {
   digests: DigestSummary[]
-  total: number
-  page: number
-  perPage: number
-  totalPages: number
-}
-
-export interface DigestDetailResponse {
-  digest: Digest
+  pagination: PaginationMeta
 }
 
 export interface UseDigestsReturn extends SWRResponse<DigestsResponse> {
@@ -30,12 +24,13 @@ export interface UseDigestsReturn extends SWRResponse<DigestsResponse> {
   totalPages: number
 }
 
-export interface UseDigestDetailReturn extends SWRResponse<DigestDetailResponse> {
-  digest?: Digest
+export interface UseDigestDetailReturn extends SWRResponse<Digest | null> {
+  digest?: Digest | null
 }
 
 /**
- * Hook for fetching paginated digest summaries
+ * Hook for fetching paginated digest summaries.
+ * Migrated to use direct Supabase access instead of API.
  * 
  * @param params Query parameters for filtering and pagination
  * @returns Digests data with loading and error states
@@ -48,16 +43,22 @@ export function useDigests(params: DigestsParams = {}): UseDigestsReturn {
     endDate
   } = params
 
-  // Build query parameters
-  const queryParams = new URLSearchParams()
-  queryParams.set("page", String(page))
-  queryParams.set("per_page", String(perPage))
-  if (startDate) queryParams.set("start_date", startDate)
-  if (endDate) queryParams.set("end_date", endDate)
+  // Create cache key
+  const cacheKey = ['digests', JSON.stringify(params)]
 
-  const key = `/digests?${queryParams.toString()}`
-
-  const { data, error, isLoading, mutate, isValidating } = useSWR<DigestsResponse>(key)
+  const { data, error, isLoading, mutate, isValidating } = useSWR<DigestsResponse>(
+    cacheKey,
+    () => supabaseQueries.getDigestSummaries({
+      page,
+      per_page: perPage,
+    }),
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+      refreshInterval: 300000, // Refresh every 5 minutes
+      errorRetryCount: 2,
+    }
+  )
 
   return {
     data,
@@ -66,27 +67,30 @@ export function useDigests(params: DigestsParams = {}): UseDigestsReturn {
     mutate,
     isValidating,
     digests: data?.digests ?? [],
-    total: data?.total ?? 0,
-    page: data?.page ?? page,
-    perPage: data?.perPage ?? perPage,
-    totalPages: data?.totalPages ?? 0
+    total: data?.pagination?.total ?? 0,
+    page: data?.pagination?.page ?? page,
+    perPage: data?.pagination?.per_page ?? perPage,
+    totalPages: data?.pagination?.total_pages ?? 0
   }
 }
 
 /**
- * Hook for fetching a single digest by ID
+ * Hook for fetching a single digest by ID.
+ * Migrated to use direct Supabase access instead of API.
  * 
  * @param id The digest ID to fetch
  * @returns Digest detail data with loading and error states
  */
 export function useDigestDetail(id?: string): UseDigestDetailReturn {
-  const key = id ? `/digests/${id}` : null
+  const key = id ? ['digest', id] : null
 
-  const { data, error, isLoading, mutate, isValidating } = useSWR<DigestDetailResponse>(
+  const { data, error, isLoading, mutate, isValidating } = useSWR<Digest | null>(
     key,
+    () => supabaseQueries.getDigestById(id!),
     {
       revalidateOnFocus: false,
-      revalidateOnReconnect: false
+      revalidateOnReconnect: false,
+      errorRetryCount: 2,
     }
   )
 
@@ -96,24 +100,27 @@ export function useDigestDetail(id?: string): UseDigestDetailReturn {
     isLoading,
     mutate,
     isValidating,
-    digest: data?.digest
+    digest: data || undefined
   }
 }
 
 /**
- * Hook for fetching the latest digest
+ * Hook for fetching the latest digest.
+ * Migrated to use direct Supabase access instead of API.
  * 
  * @returns Latest digest data with loading and error states
  */
 export function useLatestDigest(): UseDigestDetailReturn {
-  const key = "/digests/latest"
+  const key = 'digest-latest'
 
-  const { data, error, isLoading, mutate, isValidating } = useSWR<DigestDetailResponse>(
+  const { data, error, isLoading, mutate, isValidating } = useSWR<Digest | null>(
     key,
+    supabaseQueries.getLatestDigest,
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
-      refreshInterval: 60000 // Refresh every minute
+      refreshInterval: 60000, // Refresh every minute
+      errorRetryCount: 2,
     }
   )
 
@@ -123,101 +130,67 @@ export function useLatestDigest(): UseDigestDetailReturn {
     isLoading,
     mutate,
     isValidating,
-    digest: data?.digest
+    digest: data || undefined
   }
 }
 
 /**
- * Hook for fetching today's digest
+ * Hook for fetching today's digest.
+ * Note: This now uses the latest digest since date-based queries
+ * require more complex filtering logic.
  * 
  * @returns Today's digest data with loading and error states
  */
 export function useTodayDigest(): UseDigestDetailReturn {
-  const today = new Date().toISOString().split("T")[0]
-  const key = `/digests/date/${today}`
-
-  const { data, error, isLoading, mutate, isValidating } = useSWR<DigestDetailResponse>(
-    key,
-    {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: false,
-      refreshInterval: 300000 // Refresh every 5 minutes
-    }
-  )
-
-  return {
-    data,
-    error,
-    isLoading,
-    mutate,
-    isValidating,
-    digest: data?.digest
-  }
+  // For now, this returns the latest digest
+  // TODO: Add date filtering to supabase queries if needed
+  return useLatestDigest()
 }
 
 /**
- * Hook for fetching digest audio metadata
+ * Hook for fetching digest audio metadata.
+ * Note: Audio metadata is now included in the digest object directly.
  * 
  * @param digestId The digest ID to fetch audio for
  * @returns Audio metadata with loading and error states
  */
 export function useDigestAudio(digestId?: string) {
-  const key = digestId ? `/digests/${digestId}/audio` : null
-
-  interface AudioResponse {
-    url: string
-    duration: number
-    format: string
-    size: number
-  }
-
-  const { data, error, isLoading, mutate, isValidating } = useSWR<AudioResponse>(
-    key,
-    {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: false
-    }
-  )
+  const { data: digest, error, isLoading, mutate, isValidating } = useDigestDetail(digestId)
 
   return {
-    data,
+    data: digest ? {
+      url: digest.audio_url,
+      duration: digest.duration,
+      format: 'mp3', // Default format
+      size: 0, // Not available in current schema
+    } : undefined,
     error,
     isLoading,
     mutate,
     isValidating,
-    audioUrl: data?.url,
-    duration: data?.duration,
-    format: data?.format,
-    size: data?.size
+    audioUrl: digest?.audio_url,
+    duration: digest?.duration,
+    format: 'mp3',
+    size: 0,
   }
 }
 
 /**
- * Prefetch digests data
- * Useful for preloading data before navigation
+ * Prefetch digests data using Supabase queries.
+ * Useful for preloading data before navigation.
  */
 export async function prefetchDigests(params: DigestsParams = {}) {
   const {
     page = 1,
     perPage = 10,
-    startDate,
-    endDate
   } = params
 
-  const queryParams = new URLSearchParams()
-  queryParams.set("page", String(page))
-  queryParams.set("per_page", String(perPage))
-  if (startDate) queryParams.set("start_date", startDate)
-  if (endDate) queryParams.set("end_date", endDate)
-
-  const url = `/api/v1/digests?${queryParams.toString()}`
-  
   try {
-    const response = await fetch(url)
-    if (!response.ok) {
-      throw new Error(`Failed to prefetch digests: ${response.statusText}`)
-    }
-    return await response.json()
+    const result = await supabaseQueries.getDigestSummaries({
+      page,
+      per_page: perPage,
+    })
+    return result
   } catch (error) {
     console.error("Error prefetching digests:", error)
     return null
@@ -225,17 +198,12 @@ export async function prefetchDigests(params: DigestsParams = {}) {
 }
 
 /**
- * Prefetch a single digest by ID
+ * Prefetch a single digest by ID using Supabase queries.
  */
 export async function prefetchDigest(id: string) {
-  const url = `/api/v1/digests/${id}`
-  
   try {
-    const response = await fetch(url)
-    if (!response.ok) {
-      throw new Error(`Failed to prefetch digest: ${response.statusText}`)
-    }
-    return await response.json()
+    const result = await supabaseQueries.getDigestById(id)
+    return result
   } catch (error) {
     console.error("Error prefetching digest:", error)
     return null

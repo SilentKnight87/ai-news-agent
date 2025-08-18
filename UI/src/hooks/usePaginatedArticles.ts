@@ -1,4 +1,5 @@
 import useSWR from "swr";
+import { supabaseQueries } from "@/lib/supabase-queries";
 import {
   Article,
   PaginatedArticleResponse,
@@ -13,6 +14,9 @@ export interface PaginationState {
   sortBy: SortField;
   order: SortOrder;
   source?: string;
+  relevance_min?: number;
+  category?: string;
+  time_range?: string;
 }
 
 export interface UsePaginatedArticlesResult {
@@ -26,20 +30,43 @@ export interface UsePaginatedArticlesResult {
 
 /**
  * usePaginatedArticles
- * Fetches /api/v1/articles with page/per_page/sort_by/order/source
- * Uses global SWR fetcher (see ClientProviders)
+ * Migrated to use direct Supabase access instead of API.
+ * Fetches articles with pagination and filtering support.
  */
 export function usePaginatedArticles(pagination: PaginationState): UsePaginatedArticlesResult {
-  const params = new URLSearchParams();
-  params.set("page", String(pagination.page));
-  params.set("per_page", String(pagination.perPage));
-  params.set("sort_by", pagination.sortBy);
-  params.set("order", pagination.order);
-  if (pagination.source) params.set("source", pagination.source);
+  // Create cache key from pagination state
+  const cacheKey = ['paginated-articles', JSON.stringify(pagination)];
 
-  const key = `/articles?${params.toString()}`;
-
-  const { data, error, mutate } = useSWR<PaginatedArticleResponse>(key);
+  const { data, error, mutate } = useSWR<PaginatedArticleResponse>(
+    cacheKey,
+    () => {
+      if (pagination.source) {
+        return supabaseQueries.getArticlesBySource(pagination.source, {
+          page: pagination.page,
+          per_page: pagination.perPage,
+          relevance_min: pagination.relevance_min,
+        });
+      } else {
+        return supabaseQueries.getArticles({
+          page: pagination.page,
+          per_page: pagination.perPage,
+          sort_by: pagination.sortBy,
+          order: pagination.order,
+          relevance_min: pagination.relevance_min,
+          category: pagination.category,
+          time_range: pagination.time_range,
+        });
+      }
+    },
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+      refreshInterval: 300000, // Refresh every 5 minutes
+      dedupingInterval: 60000, // Dedupe requests within 1 minute
+      errorRetryCount: 3,
+      errorRetryInterval: 5000,
+    }
+  );
 
   return {
     articles: data?.articles ?? [],
