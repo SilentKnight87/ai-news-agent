@@ -11,9 +11,13 @@ from functools import lru_cache
 from typing import Annotated
 
 import httpx
+from dotenv import load_dotenv
 from fastapi import Depends
 from supabase import Client, create_client
 from supabase.lib.client_options import ClientOptions
+
+# Load environment variables from .env file
+load_dotenv()
 
 from ..agents.news_agent import get_news_analyzer as get_analyzer_instance
 from ..config import get_settings
@@ -40,6 +44,13 @@ def get_supabase_client() -> Client:
     
     if not key_to_use:
         raise ValueError("Either SUPABASE_SERVICE_ROLE_KEY environment variable or supabase_anon_key setting must be provided")
+    
+    # Log authentication type for debugging (debug level only)
+    if service_key:
+        logger.debug("Using Supabase service role key for authenticated operations")
+    else:
+        logger.debug("Using Supabase anonymous key (read-only operations)")
+        logger.warning("Service role key not available - write operations may fail due to RLS policies")
 
     # Configure connection pool
     options = ClientOptions(

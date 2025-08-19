@@ -308,13 +308,13 @@ class ArticleRepository:
 
     async def batch_create_articles(self, articles: list[Article]) -> list[Article]:
         """
-        Create multiple articles in a single batch operation.
+        Create multiple articles in a single batch operation with upsert for duplicates.
 
         Args:
             articles: List of articles to create.
 
         Returns:
-            List[Article]: List of created articles.
+            List[Article]: List of created/updated articles.
         """
         if not articles:
             return []
@@ -326,8 +326,11 @@ class ArticleRepository:
                 article_data = self._article_to_db_dict(article)
                 batch_data.append(article_data)
 
-            # Batch insert
-            response = self.supabase.table("articles").insert(batch_data).execute()
+            # Batch upsert - handle conflicts on (source, source_id) unique constraint
+            response = self.supabase.table("articles").upsert(
+                batch_data,
+                on_conflict="source,source_id"
+            ).execute()
 
             # Convert response back to Article models
             created_articles = []
@@ -335,12 +338,80 @@ class ArticleRepository:
                 article = self._db_dict_to_article(article_data)
                 created_articles.append(article)
 
-            logger.info(f"Batch created {len(created_articles)} articles")
+            logger.info(f"Batch upserted {len(created_articles)} articles (created or updated)")
             return created_articles
 
         except Exception as e:
             logger.error(f"Failed to batch create articles: {e}")
-            return []
+            # Fallback to individual inserts if batch upsert fails
+            return await self._fallback_individual_upserts(articles)
+
+    async def _fallback_individual_upserts(self, articles: list[Article]) -> list[Article]:
+        """
+        Fallback method to handle articles individually if batch upsert fails.
+        
+        Args:
+            articles: List of articles to process.
+            
+        Returns:
+            List[Article]: Successfully processed articles.
+        """
+        created_articles = []
+        
+        for article in articles:
+            try:
+                # Check if article exists
+                existing = await self.find_by_source_id(article.source, article.source_id)
+                
+                if existing:
+                    # Update existing article (only if new data is different)
+                    if self._should_update_article(existing, article):
+                        updated = await self.update_article(existing.id, {
+                            "title": article.title,
+                            "content": article.content,
+                            "summary": article.summary,
+                            "relevance_score": article.relevance_score,
+                            "categories": article.categories,
+                            "key_points": article.key_points,
+                            "embedding": article.embedding
+                        })
+                        if updated:
+                            created_articles.append(updated)
+                    else:
+                        # Article unchanged, add existing to result
+                        created_articles.append(existing)
+                else:
+                    # Create new article
+                    new_article = await self.create_article(article)
+                    created_articles.append(new_article)
+                    
+            except Exception as e:
+                logger.warning(f"Failed to process article '{article.title}': {e}")
+                continue
+                
+        logger.info(f"Fallback processed {len(created_articles)}/{len(articles)} articles")
+        return created_articles
+    
+    def _should_update_article(self, existing: Article, new: Article) -> bool:
+        """
+        Determine if an existing article should be updated with new data.
+        
+        Args:
+            existing: Existing article from database.
+            new: New article data.
+            
+        Returns:
+            bool: True if update is needed.
+        """
+        # Update if content, summary, or analysis has changed
+        return (
+            existing.content != new.content or
+            existing.summary != new.summary or
+            existing.relevance_score != new.relevance_score or
+            existing.categories != new.categories or
+            existing.key_points != new.key_points or
+            (new.embedding and existing.embedding != new.embedding)
+        )
 
     async def find_by_source_id(
         self,

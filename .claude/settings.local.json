@@ -25,10 +25,17 @@
       "Bash(cp:*)",
       "mcp__context7__get-library-docs",
       "mcp__supabase__search_docs",
-      "mcp__context7__resolve-library-id"
+      "mcp__context7__resolve-library-id",
+      "Bash(gh workflow:*)",
+      "mcp__supabase__execute_sql",
+      "mcp__supabase__get_advisors"
     ],
     "deny": []
   },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "supabase"
+  ],
   "hooks": {
     "Stop": [
       {
@@ -50,9 +57,5 @@
         ]
       }
     ]
-  },
-  "enableAllProjectMcpServers": true,
-  "enabledMcpjsonServers": [
-    "supabase"
-  ]
+  }
 }

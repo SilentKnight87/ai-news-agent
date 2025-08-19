@@ -392,6 +392,11 @@ async def setup_default_tasks() -> None:
     """
     Set up default scheduled tasks for the AI news aggregator.
     """
+    from dotenv import load_dotenv
+    
+    # Load environment variables from .env file
+    load_dotenv()
+    
     from ..api.dependencies import (
         get_article_repository,
         get_deduplication_service,

@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     # Supabase configuration
     supabase_url: str = Field(..., description="Supabase project URL")
     supabase_anon_key: str | None = Field(None, description="Supabase anonymous key (optional if service role key available)")
+    supabase_service_role_key: str | None = Field(None, description="Supabase service role key for write operations")
 
     # AI Service API keys
     gemini_api_key: str = Field(..., description="Google Gemini API key")
@@ -35,6 +36,13 @@ class Settings(BaseSettings):
 
     # GitHub API credentials
     github_token: str | None = Field(None, description="GitHub personal access token")
+    
+    # GitHub OAuth credentials
+    github_oauth_client_id: str | None = Field(None, description="GitHub OAuth client ID")
+    github_client_secret: str | None = Field(None, description="GitHub OAuth client secret")
+    
+    # OpenRouter API key
+    openrouter_api_key: str | None = Field(None, description="OpenRouter API key for LLM access")
 
     # Application configuration
     fetch_interval_minutes: int = Field(30, description="Minutes between fetching cycles")

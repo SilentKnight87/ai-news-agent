@@ -35,7 +35,7 @@ class GeminiEmbeddingsService:
         """
         self.api_key = api_key
         self.model_name = "text-embedding-004"
-        self.base_url = "https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent"
+        self.base_url = "https://generativelanguage.googleapis.com/v1beta/models"
         
         # Implement size-limited LRU cache (max 1000 entries)
         self._cache = LRUCache(maxsize=1000)
@@ -100,8 +100,8 @@ class GeminiEmbeddingsService:
 
         for i, text in enumerate(texts):
             if not text or not text.strip():
-                # Return zero vector for empty texts (using 768 as default, but should be configurable)
-                results[i] = [0.0] * 768  # Using 768 for production efficiency
+                # Return zero vector for empty texts (using 384 to match database schema)
+                results[i] = [0.0] * 384  # Match database vector(384) definition
                 continue
 
             normalized_text = text.strip()
@@ -122,7 +122,7 @@ class GeminiEmbeddingsService:
                     
             except Exception as e:
                 logger.error(f"Failed to generate embedding for text {original_index}: {e}")
-                results[original_index] = [0.0] * 768  # Fallback to zero vector
+                results[original_index] = [0.0] * 384  # Fallback to zero vector
 
         # Convert None results to zero vectors
         final_results = []
@@ -130,7 +130,7 @@ class GeminiEmbeddingsService:
             if result is not None:
                 final_results.append(result)
             else:
-                final_results.append([0.0] * 768)
+                final_results.append([0.0] * 384)
 
         logger.debug(f"Generated {len(final_results)} embeddings")
         return final_results
@@ -154,14 +154,14 @@ class GeminiEmbeddingsService:
         for text in texts:
             payload = {
                 "model": f"models/{self.model_name}",
-                "contents": [{"parts": [{"text": text}]}],
-                "embedding_config": {
-                    "task_type": "SEMANTIC_SIMILARITY",
-                    "output_dimensionality": 768
-                }
+                "content": {
+                    "parts": [{"text": text}]
+                },
+                "taskType": "SEMANTIC_SIMILARITY",
+                "outputDimensionality": 384
             }
             
-            url = f"{self.base_url}?key={self.api_key}"
+            url = f"{self.base_url}/{self.model_name}:embedContent?key={self.api_key}"
             
             headers = {
                 "Content-Type": "application/json"
@@ -182,8 +182,8 @@ class GeminiEmbeddingsService:
                         
                         if response.status_code == 200:
                             data = response.json()
-                            # Gemini API returns embeddings array, we want the first (and only) embedding
-                            embedding = data["embeddings"][0]["values"]
+                            # Gemini API returns embedding in 'embedding' field with 'values' array
+                            embedding = data["embedding"]["values"]
                             results.append(embedding)
                             break
                         
@@ -194,7 +194,17 @@ class GeminiEmbeddingsService:
                                 await asyncio.sleep(delay)
                                 continue
                         
+                        elif response.status_code == 400:  # Bad Request
+                            logger.error(f"Bad Request (400): {response.text}")
+                            logger.error(f"Request payload: {payload}")
+                            if attempt < max_retries - 1:
+                                delay = base_delay * (2 ** attempt)
+                                logger.warning(f"API error: Client error '400 Bad Request' for url '{url}', retrying in {delay}s...")
+                                await asyncio.sleep(delay)
+                                continue
+                        
                         # Handle other errors
+                        logger.error(f"HTTP {response.status_code}: {response.text}")
                         response.raise_for_status()
                         
                 except httpx.TimeoutException:
@@ -289,7 +299,7 @@ class GeminiEmbeddingsService:
         """
         return {
             "model_name": self.model_name,
-            "embedding_dimension": 768,  # Using 768 for production efficiency (can be up to 3072)
+            "embedding_dimension": 384,  # Match database vector(384) definition
             "max_embedding_dimension": 3072,
             "cache_size": self.get_cache_size(),
             "provider": "gemini",

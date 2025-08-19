@@ -28,7 +28,7 @@ Add to your Claude Desktop or MCP-compatible client:
   "mcpServers": {
     "ai-news-aggregator": {
       "command": "npx",
-      "args": ["@modelcontextprotocol/server-http", "https://my-mcp-server.pbrow35.workers.dev/mcp"],
+      "args": ["mcp-remote", "https://my-mcp-server.pbrow35.workers.dev/mcp"],
       "env": {}
     }
   }

@@ -8,6 +8,11 @@ cleanup, and queue processing.
 import logging
 from datetime import datetime
 
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
 from ..api.dependencies import get_supabase_client
 from ..services.audio_queue import get_audio_queue
 from ..services.audio_storage import get_audio_storage_service

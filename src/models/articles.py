@@ -38,7 +38,7 @@ class Article(BaseModel):
     source_id: str = Field(..., description="Unique identifier from the source")
     source: ArticleSource = Field(..., description="Source of the article")
     title: str = Field(..., min_length=1, max_length=500, description="Article title")
-    content: str = Field(..., max_length=10000, description="Article content/summary")
+    content: str = Field(..., max_length=50000, description="Article content/summary")
     url: str = Field(..., description="URL to the original article")
     author: str | None = Field(None, description="Article author(s)")
     published_at: datetime = Field(..., description="When the article was published")
@@ -122,7 +122,7 @@ class ArticleCreate(BaseModel):
     source_id: str
     source: ArticleSource
     title: str = Field(..., min_length=1, max_length=500)
-    content: str = Field(..., max_length=10000)
+    content: str = Field(..., max_length=50000)
     url: str
     author: str | None = None
     published_at: datetime
